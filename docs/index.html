@@ -98,6 +98,7 @@ p.note{margin:8px 0 0;font-size:12.5px;color:var(--muted);line-height:1.65}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .seg.red button[aria-pressed="true"]{color:var(--red)}
 .seg.s4 button{font-size:12.5px;padding:8px 2px}
+.seg.s4 button[data-a]{font-size:12px}
 
 /* 进贡 */
 .trib{display:flex;flex-direction:column;gap:10px}
@@ -403,7 +404,13 @@ ol.tips span{color:var(--muted)}
         <button class="btn ghost" id="undoRound">撤销上一局</button>
         <button class="btn ghost" id="newMatch">比分归零 · 重开一场</button>
       </div>
-      <p class="note">过 A 规则：打 A 时拿到头游即算过 A 获胜；三次打 A 未过，退回打 2。升级不越 A（如打 K 升 3 级只到 A）。</p>
+      <h3 style="margin-top:14px">过 A 要打成什么样</h3>
+      <div class="seg s4" id="aRuleSeg">
+        <button data-a="1">头游即可</button>
+        <button data-a="2">头游 + 三游以上</button>
+        <button data-a="3">必须双下</button>
+      </div>
+      <p class="note" id="aRuleNote"></p>
     </div>
   </section>
 
@@ -442,7 +449,7 @@ const S = {
   cant:[{},{},{},{}],
   pend:{}, pendWild:0,
   teams:{a:{name:'我方',lv:2,tries:0}, b:{name:'对方',lv:2,tries:0}},
-  playing:'a', winner:null, log:[], pickFirst:0, trackedAt:0
+  playing:'a', winner:null, log:[], pickFirst:0, trackedAt:0, aRule:2
 };
 ALL.forEach(r=>{ S.mine[r.k]=0; S.seen[r.k]=0; });
 
@@ -1190,6 +1197,11 @@ function renderHelp(){
 /* ==========================================================
    计分器
    ========================================================== */
+const A_RULE_NOTE = {
+  1:'打 A 时只要拿到头游就算过 A（对家名次不限）。',
+  2:'打 A 时要头游、且对家至少是三游（升 2 级或双下）才算过 A —— 靠「头游+四游」的 +1 级不算。',
+  3:'打 A 时必须双下（头游+二游）才算过 A。'
+};
 const LVNAME = v => byVal[v] || String(v);
 const LVVAL  = s => { const r=RANKS.find(x=>x.k===s); return r?r.v:2; };
 function renderScore(){
@@ -1208,6 +1220,10 @@ function renderScore(){
     b.onclick=()=>{ S.pickFirst=i; renderAll(); save(); };
     ws.appendChild(b);
   });
+  document.querySelectorAll('#aRuleSeg button').forEach(b=>
+    b.setAttribute('aria-pressed', String(S.aRule||2)===b.dataset.a));
+  $('#aRuleNote').textContent = A_RULE_NOTE[S.aRule||2]
+    + '　打 A 三次未过，退回打 2。升级不越 A（打 K 升 3 级只到 A）。';
   const wb=$('#winBox'); wb.innerHTML='';
   if(S.winner){
     const d=el('div','win');
@@ -1374,7 +1390,20 @@ function record(up){
   const seat=S.pickFirst||0, w = seat%2===0 ? 'a' : 'b';
   const t=S.teams[w], from=LVNAME(t.lv);
   const atA = t.lv===14 && S.playing===w, prev=snapshot();
-  if(atA){ S.winner=w; S.log.push({w,up,from,to:'胜',prev,first:seat}); renderAll(); save(); return; }
+  const need = S.aRule || 2;                       // 过 A 需要升几级
+  if(atA){
+    if(up >= need){                                // 达标 → 过 A
+      S.winner=w; S.log.push({w,up,from,to:'胜',prev,first:seat});
+      renderAll(); save(); return;
+    }
+    // 拿了头游但没到门槛：不算过 A，消耗一次打 A 机会，继续打 A
+    t.tries++;
+    let to2 = 'A·未过';
+    if(t.tries>=3){ t.lv=2; t.tries=0; to2='退回 2'; }
+    S.playing=w; S.level=t.lv;
+    S.log.push({w,up,from,to:to2,prev,first:seat,last:null,kang:false,gift:[]});
+    renderAll(); save(); return;
+  }
   const other = w==='a'?'b':'a';
   if(S.teams[other].lv===14 && S.playing===other){
     S.teams[other].tries++;
@@ -1386,6 +1415,8 @@ function record(up){
   renderAll(); save();
 }
 document.querySelectorAll('[data-up]').forEach(b=> b.onclick=()=>record(+b.dataset.up));
+document.querySelectorAll('#aRuleSeg button').forEach(b=>
+  b.onclick=()=>{ S.aRule=+b.dataset.a; renderAll(); save(); });
 $('#nameA').oninput = e=>{ S.teams.a.name=e.target.value||'我方'; renderScore(); save(); };
 $('#nameB').oninput = e=>{ S.teams.b.name=e.target.value||'对方'; renderScore(); save(); };
 $('#undoRound').onclick = ()=>{
