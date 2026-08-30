@@ -401,7 +401,7 @@ ol.tips span{color:var(--muted)}
       <div id="logBox"></div>
       <div class="btnrow" style="margin-top:12px">
         <button class="btn ghost" id="undoRound">撤销上一局</button>
-        <button class="btn ghost" id="newMatch">重开比赛</button>
+        <button class="btn ghost" id="newMatch">比分归零 · 重开一场</button>
       </div>
       <p class="note">过 A 规则：打 A 时拿到头游即算过 A 获胜；三次打 A 未过，退回打 2。升级不越 A（如打 K 升 3 级只到 A）。</p>
     </div>
@@ -945,12 +945,12 @@ function renderPend(){
   const btns = $('#trackBtns'); btns.innerHTML='';
   if(S.lite){
     const b1=el('button','btn ghost','撤销上一步'); b1.onclick=undoStep;
-    const b2=el('button','btn ghost','开新一局'); b2.onclick=resetRound;
+    const b2=el('button','btn','清空记牌 · 开下一局'); b2.onclick=resetRound;
     btns.append(b1,b2); return;
   }
   if(S.mode==='hand'){
     const b1=el('button','btn ghost','撤销上一步'); b1.onclick=undoStep;
-    const b2=el('button','btn ghost','开新一局'); b2.onclick=resetRound;
+    const b2=el('button','btn','清空记牌 · 开下一局'); b2.onclick=resetRound;
     const b3=el('button','btn','登记完，开打'); b3.onclick=()=>setMode('play');
     btns.append(b3,b1,b2); return;
   }
@@ -986,7 +986,7 @@ function renderPend(){
   btns.append(ok,ps,wd,cl,ud);
 }
 function resetRound(){
-  if(!confirm('清空记牌和牌桌，开始新一局？（比分不受影响）')) return;
+  if(!confirm('清空这一局的记牌，开始记下一局？\n\n比分和等级不受影响。')) return;
   clearTrack();
 }
 /* 轻记的看板：只有这 20 张牌值得你抬手 */
@@ -1402,7 +1402,7 @@ function newMatch(){
   S.teams.a.lv=2; S.teams.b.lv=2; S.teams.a.tries=0; S.teams.b.tries=0;
   S.playing='a'; S.level=2; S.winner=null; S.log=[]; S.trackedAt=0; renderAll(); save();
 }
-$('#newMatch').onclick = ()=>{ if(confirm('清空比分，重开一场？')) newMatch(); };
+$('#newMatch').onclick = ()=>{ if(confirm('两队等级归 2、清空全部牌局记录，重开一场？\n\n记牌数据不受影响。')) newMatch(); };
 
 /* ==========================================================
    顶部 / tabs / boot
