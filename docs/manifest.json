@@ -1,0 +1,30 @@
+{
+  "name": "掼蛋牌桌助手",
+  "short_name": "掼蛋助手",
+  "description": "掼蛋记牌器、出牌建议、进贡助手与升级计分器",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#141A18",
+  "theme_color": "#141A18",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

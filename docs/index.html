@@ -1,0 +1,1454 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#141A18" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#E7EAE5" media="(prefers-color-scheme: light)">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="掼蛋助手">
+<style>
+  /* 装到主屏幕后没有浏览器边框，得自己让开刘海和home条 */
+  .top{padding-top:calc(10px + env(safe-area-inset-top))}
+  .shell{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+</style>
+<title>掼蛋牌桌助手</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&family=ZCOOL+XiaoWei&display=swap">
+
+<style>
+:root{
+  --bg:#E7EAE5; --surface:#F8F9F6; --surface-2:#DBE0D8;
+  --line:#C5CCC1; --line-soft:#D7DCD3;
+  --text:#1A211D; --muted:#5F6A63; --faint:#8B958D;
+  --red:#A93226; --red-soft:#F0DEDB;
+  --jade:#1D6B58; --jade-soft:#D7E5E0;
+  --gold:#8E6B18; --gold-soft:#EDE3C9;
+  --shadow:0 1px 2px rgba(26,33,29,.07), 0 10px 26px -14px rgba(26,33,29,.30);
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101413; --surface:#191F1D; --surface-2:#242C29;
+    --line:#333D39; --line-soft:#28312E;
+    --text:#E7EDE9; --muted:#98A49D; --faint:#6B7972;
+    --red:#E4655A; --red-soft:#38211F;
+    --jade:#42B394; --jade-soft:#16302A;
+    --gold:#D6A94A; --gold-soft:#332A15;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 12px 30px -16px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101413; --surface:#191F1D; --surface-2:#242C29;
+  --line:#333D39; --line-soft:#28312E;
+  --text:#E7EDE9; --muted:#98A49D; --faint:#6B7972;
+  --red:#E4655A; --red-soft:#38211F;
+  --jade:#42B394; --jade-soft:#16302A;
+  --gold:#D6A94A; --gold-soft:#332A15;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 12px 30px -16px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}   /* 否则会被 .seg/.card 的 display 规则盖掉 */
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+  font-size:15px;line-height:1.6;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px;border-radius:4px}
+.shell{max-width:560px;margin:0 auto;padding:0 14px 64px}
+
+.top{position:sticky;top:0;z-index:20;background:var(--bg);
+  background:color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--line-soft);margin:0 -14px;padding:10px 14px 0}
+.brandrow{display:flex;align-items:center;gap:10px}
+.brand{font-family:"ZCOOL XiaoWei","Noto Sans SC",serif;font-size:21px;letter-spacing:.06em;line-height:1}
+.brand .dot{color:var(--red)}
+.brand-sub{font-size:11px;color:var(--faint);letter-spacing:.14em;margin-left:2px}
+.lvlchip{margin-left:auto;display:flex;align-items:center;gap:7px;border:1px solid var(--gold);
+  background:var(--gold-soft);border-radius:999px;padding:4px 12px 4px 10px}
+.lvlchip .lab{font-size:11px;color:var(--gold);letter-spacing:.1em}
+.lvlchip .val{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:17px;color:var(--gold);line-height:1}
+.lvlpick{display:none;gap:5px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+.lvlpick::-webkit-scrollbar{display:none}
+.lvlpick.open{display:flex}
+.lvlpick button{flex:0 0 auto;min-width:34px;padding:5px 0;text-align:center;border:1px solid var(--line);
+  border-radius:7px;background:var(--surface);font-family:"IBM Plex Mono",monospace;font-size:14px;color:var(--muted)}
+.lvlpick button[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:var(--surface);font-weight:600}
+.tabs{display:flex;gap:2px;padding:10px 0 8px}
+.tabs button{flex:1;padding:8px 2px 9px;text-align:center;font-size:14px;color:var(--muted);border-bottom:2px solid transparent}
+.tabs button[aria-selected="true"]{color:var(--text);font-weight:500;border-bottom-color:var(--red)}
+
+.panel{display:none;padding-top:16px}
+.panel.on{display:block}
+.card{background:var(--surface);border:1px solid var(--line-soft);border-radius:var(--radius);
+  padding:14px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card > h3{margin:0 0 10px;font-size:11px;font-weight:500;letter-spacing:.16em;color:var(--faint);text-transform:uppercase}
+h2.sec{font-family:"ZCOOL XiaoWei","Noto Sans SC",serif;font-size:17px;font-weight:400;letter-spacing:.04em;
+  margin:20px 0 10px;display:flex;align-items:baseline;gap:8px}
+h2.sec::after{content:"";flex:1;height:1px;background:var(--line-soft)}
+p.note{margin:8px 0 0;font-size:12.5px;color:var(--muted);line-height:1.65}
+
+.seg{display:flex;background:var(--surface-2);border-radius:9px;padding:3px;gap:3px}
+.seg button{flex:1;padding:8px 4px;text-align:center;font-size:13px;color:var(--muted);border-radius:7px;line-height:1.3}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.seg.red button[aria-pressed="true"]{color:var(--red)}
+.seg.s4 button{font-size:12.5px;padding:8px 2px}
+
+/* 进贡 */
+.trib{display:flex;flex-direction:column;gap:10px}
+.flow{display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:9px;
+  background:var(--surface-2);border:1px solid var(--line-soft);flex-wrap:wrap}
+.flow.me{border-color:var(--jade);background:var(--jade-soft)}
+.flow .who{font-weight:600;font-size:15px}
+.flow .arrow{color:var(--faint);font-family:"IBM Plex Mono",monospace}
+.flow .what{margin-left:auto;font-size:12.5px;color:var(--muted);flex:0 0 auto}
+.trow{display:flex;gap:9px;align-items:baseline;font-size:13px;padding:2px 0}
+.trow .lab{flex:0 0 42px;font-size:11px;letter-spacing:.1em;color:var(--faint)}
+.trow b{font-weight:500}
+.gift{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.gift button{border:1px solid var(--line);border-radius:7px;padding:5px 11px;font-size:13px;
+  background:var(--surface);font-family:"IBM Plex Mono",monospace}
+.gift button.on{border-color:var(--jade);background:var(--jade-soft);color:var(--jade);font-weight:600}
+
+.btn{border:1px solid var(--line);border-radius:8px;padding:8px 14px;background:var(--surface);font-size:13.5px;color:var(--text)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.4}
+.btn.ghost{background:transparent;color:var(--muted)}
+.btn.solid{background:var(--red);border-color:var(--red);color:#fff}
+.btn.jade{background:var(--jade);border-color:var(--jade);color:#fff}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:var(--surface)}
+.btn.wide{width:100%;text-align:center}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+
+/* 座位条 */
+.seats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.seat{border:1px solid var(--line-soft);border-radius:9px;padding:7px 4px 6px;text-align:center;
+  background:var(--surface-2);display:flex;flex-direction:column;align-items:center;gap:1px}
+.seat > span{display:block}
+.seat .nm{font-size:11.5px;color:var(--muted);line-height:1.3}
+.seat .lf{font-family:"IBM Plex Mono",monospace;font-size:20px;font-weight:500;line-height:1.2}
+.seat .st{font-size:9.5px;letter-spacing:.06em;color:var(--faint);height:12px;line-height:1.2}
+.seat.me{border-color:var(--jade)}
+.seat.me .lf{color:var(--jade)}
+.seat.turn{background:var(--gold-soft);border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.seat.turn .nm,.seat.turn .st{color:var(--gold)}
+.seat.done{opacity:.45}
+.seat .top-mark{color:var(--red);font-weight:600}
+
+.table-now{display:flex;align-items:center;gap:8px;margin-top:10px;padding:9px 11px;border-radius:8px;
+  background:var(--surface-2);border:1px solid var(--line-soft);font-size:13px}
+.table-now .k{font-size:11px;color:var(--faint);letter-spacing:.1em;flex:0 0 auto}
+.table-now .v{font-family:"IBM Plex Mono",monospace;font-weight:500}
+.table-now .by{margin-left:auto;font-size:11.5px;color:var(--muted)}
+
+/* 记牌网格 */
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
+.tile{background:var(--surface);border:1px solid var(--line-soft);border-radius:11px;
+  padding:9px clamp(4px, 1.7vw, 7px) 8px;
+  display:flex;flex-direction:column;align-items:stretch;gap:6px;text-align:left;
+  transition:transform .08s, background .15s, border-color .15s;
+  user-select:none;position:relative;overflow:hidden}
+.tile:active{transform:scale(.95)}
+/* 点数是主角：先找到是哪张牌，再读旁边的剩余张数 */
+/* 字号跟着屏宽缩，窄机上「10」「小王」才不会顶出格子 */
+.tile .row{display:flex;align-items:baseline;justify-content:space-between;gap:3px;
+  min-width:0;white-space:nowrap;overflow:hidden}
+.tile .rk{font-family:"IBM Plex Mono",monospace;font-size:clamp(18px, 6.2vw, 26px);
+  font-weight:600;line-height:1;letter-spacing:-.05em}
+.tile .lf{font-family:"IBM Plex Mono",monospace;font-size:clamp(12px, 3.7vw, 15px);
+  font-weight:500;line-height:1;color:var(--muted);letter-spacing:-.02em;flex:0 0 auto}
+.tile .mine{font-size:10px;color:var(--faint);line-height:1;height:11px}
+.tile .mine b{color:var(--jade);font-weight:600}
+.pips{display:flex;gap:2px;height:4px}
+.pip{flex:1 1 0;max-width:7px;height:4px;border-radius:2px;background:var(--line)}
+.pip.on{background:var(--text)}
+.tile.lvl{border-color:var(--gold);background:var(--gold-soft)}
+.tile.lvl .rk{color:var(--gold)}
+.tile.lvl .lf{color:color-mix(in srgb, var(--gold) 80%, transparent)}
+.tile.lvl .pip.on{background:var(--gold)}
+.tile.joker .rk{font-family:"Noto Sans SC",sans-serif;font-size:clamp(13px, 4.1vw, 16px);
+  font-weight:700;letter-spacing:0;color:var(--red)}
+/* 「小王」「大王」两个汉字比数字宽，只有窄屏放不下时才改成上下叠 */
+@media (max-width:400px){
+  .tile.joker .row{flex-direction:column;align-items:flex-start;gap:3px}
+}
+.tile.joker .pip.on{background:var(--red)}
+.tile.empty{opacity:.32}
+/* 别家一张都没有了，而我手上还有 —— 这几张就是绝对大牌 */
+.tile.owned{border-color:var(--jade);background:var(--jade-soft)}
+.tile.owned .lf{color:var(--jade)}
+.tile.sel{border-color:var(--red);box-shadow:inset 0 0 0 2px var(--red)}
+.tile .badge{position:absolute;top:3px;right:4px;font-family:"IBM Plex Mono",monospace;font-size:10px;
+  color:var(--red);font-weight:600}
+@media (prefers-reduced-motion:reduce){.tile{transition:none}}
+
+.pendbar{margin-top:11px;padding:10px 11px;border-radius:9px;border:1px dashed var(--line);background:var(--surface-2)}
+.pendbar .lab{font-size:11px;letter-spacing:.12em;color:var(--faint)}
+.pendbar .val{font-family:"IBM Plex Mono",monospace;font-size:15px;margin-top:3px}
+.pendbar .val em{font-style:normal;color:var(--faint)}
+.pendbar .kind{font-size:12px;color:var(--jade);margin-top:2px}
+.pendbar .kind.bad{color:var(--red)}
+
+.readout{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line-soft);
+  border:1px solid var(--line-soft);border-radius:9px;overflow:hidden}
+.readout.r4{grid-template-columns:repeat(4,1fr)}
+.readout.r4 .v{font-size:23px}
+.readout .v.gold{color:var(--gold)}
+/* 轻记：值得花点击的就那几张，其余弱化但仍可点 */
+.grid.lite .tile:not(.key){opacity:.56}
+.grid.lite .tile:not(.key).sel{opacity:1}
+.readout div{background:var(--surface);padding:9px 8px;text-align:center}
+.readout .k{font-size:10.5px;color:var(--faint);letter-spacing:.08em;line-height:1.4}
+.readout .v{font-family:"IBM Plex Mono",monospace;font-size:19px;font-weight:500;line-height:1.25}
+.readout .v.red{color:var(--red)}
+.readout .v.jade{color:var(--jade)}
+
+.alertline{display:flex;gap:8px;align-items:flex-start;margin-top:10px;padding:9px 11px;border-radius:8px;
+  background:var(--red-soft);border:1px solid color-mix(in srgb,var(--red) 30%, transparent);font-size:12.5px;line-height:1.55}
+.alertline.calm{background:var(--jade-soft);border-color:color-mix(in srgb,var(--jade) 28%, transparent)}
+.alertline .ic{color:var(--red);font-weight:700;line-height:1.5}
+.alertline.calm .ic{color:var(--jade)}
+.stale{border:1px solid var(--gold);background:var(--gold-soft);border-radius:10px;
+  padding:12px 13px;margin-bottom:12px;display:flex;flex-direction:column;gap:9px}
+.stale .t{font-size:13.5px;line-height:1.6}
+.stale .t b{color:var(--gold)}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);border-radius:7px;padding:4px 9px;font-size:12.5px;
+  display:inline-flex;align-items:center;gap:6px;background:var(--surface)}
+.chip .n{font-family:"IBM Plex Mono",monospace;color:var(--faint);font-size:11.5px}
+.chip.bomb{border-color:var(--red);background:var(--red-soft);color:var(--red);font-weight:500}
+.chip.wild{border-color:var(--gold);background:var(--gold-soft);color:var(--gold)}
+.chip.seq{border-color:var(--jade);color:var(--jade);background:var(--jade-soft)}
+.emptyhint{text-align:center;color:var(--faint);font-size:13px;padding:22px 10px;line-height:1.7}
+
+/* 出牌建议 */
+.adv{border:1px solid var(--line-soft);border-radius:9px;padding:11px 12px;background:var(--surface-2);margin-bottom:7px}
+.adv.first{border-color:var(--jade);background:var(--jade-soft)}
+.adv.first.pass{border-color:var(--gold);background:var(--gold-soft)}
+.adv.first.blast{border-color:var(--red);background:var(--red-soft)}
+.adv-head{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.badge{font-size:11px;letter-spacing:.1em;padding:2px 8px;border-radius:5px;border:1px solid var(--line);
+  color:var(--muted);background:var(--surface);flex:0 0 auto}
+.adv.first .badge{border-color:var(--jade);color:var(--jade);font-weight:600}
+.adv.first.pass .badge{border-color:var(--gold);color:var(--gold)}
+.adv.first.blast .badge{border-color:var(--red);color:var(--red)}
+.adv-play{font-family:"IBM Plex Mono",monospace;font-size:15.5px;font-weight:500}
+.adv-h{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted);flex:0 0 auto}
+.adv-why{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.6}
+.adv.first .adv-why{color:var(--text)}
+
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.field label{font-size:11px;letter-spacing:.12em;color:var(--faint)}
+select{font:inherit;font-size:14px;background:var(--surface);color:var(--text);
+  border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+
+.knows{display:flex;flex-direction:column;gap:5px}
+.know{display:flex;gap:9px;align-items:baseline;font-size:12.5px}
+.know .who{flex:0 0 34px;color:var(--muted)}
+.know .txt{font-family:"IBM Plex Mono",monospace;font-size:12px}
+
+/* 计分器 */
+.teams{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:stretch}
+.team{border:1px solid var(--line-soft);border-radius:10px;padding:12px 10px;text-align:center;background:var(--surface);position:relative}
+.team.act{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.team input{border:none;background:none;text-align:center;width:100%;padding:0;font-size:13px;color:var(--muted);border-bottom:1px dashed transparent}
+.team input:focus{outline:none;border-bottom-color:var(--line)}
+.team .lv{font-family:"IBM Plex Mono",monospace;font-size:40px;font-weight:500;line-height:1.05;margin-top:2px;letter-spacing:-.04em}
+.team.a .lv{color:var(--red)}
+.team.b .lv{color:var(--jade)}
+.team .cap{font-size:10.5px;color:var(--faint);letter-spacing:.1em;margin-top:1px}
+.tries{display:flex;gap:3px;justify-content:center;margin-top:5px;height:6px}
+.tries i{width:6px;height:6px;border-radius:50%;border:1px solid var(--gold)}
+.tries i.used{background:var(--gold)}
+.vs{display:flex;align-items:center;font-size:11px;color:var(--faint);letter-spacing:.1em}
+.crown{position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:.1em;
+  background:var(--gold);color:var(--surface);padding:1px 8px;border-radius:999px;white-space:nowrap}
+.logline{display:flex;gap:9px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line-soft);font-size:13px}
+.logline:last-child{border-bottom:none}
+.logline .no{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--faint);flex:0 0 26px}
+.logline .who{font-weight:500}
+.logline .who.a{color:var(--red)}
+.logline .who.b{color:var(--jade)}
+.logline .up{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted)}
+.win{text-align:center;padding:16px;border-radius:10px;border:1px solid var(--gold);background:var(--gold-soft);margin-bottom:12px}
+.win .t{font-family:"ZCOOL XiaoWei",serif;font-size:22px;color:var(--gold);letter-spacing:.06em}
+
+ol.tips{margin:0;padding-left:1.15em;display:flex;flex-direction:column;gap:9px;font-size:13.5px;line-height:1.65}
+ol.tips li::marker{color:var(--red);font-family:"IBM Plex Mono",monospace;font-size:12px}
+ol.tips b{font-weight:500;color:var(--text)}
+ol.tips span{color:var(--muted)}
+.foot{text-align:center;font-size:11.5px;color:var(--faint);padding:26px 0 0;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="brandrow">
+      <div>
+        <div class="brand">掼蛋<span class="dot">·</span>牌桌助手</div>
+        <div class="brand-sub mono">JI PAI / CHU PAI / JI FEN</div>
+      </div>
+      <button class="lvlchip" id="lvlBtn" aria-expanded="false">
+        <span class="lab">本局打</span><span class="val" id="lvlVal">2</span>
+      </button>
+    </div>
+    <div class="lvlpick" id="lvlPick"></div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="track" aria-selected="true">记牌器</button>
+      <button role="tab" data-tab="help" aria-selected="false">出牌建议</button>
+      <button role="tab" data-tab="score" aria-selected="false">计分器</button>
+    </nav>
+  </header>
+
+  <section class="panel on" id="p-track">
+    <div id="staleBar"></div>
+    <div class="card">
+      <h3>记到什么程度</h3>
+      <div class="seg red" id="liteSeg">
+        <button data-lite="1" aria-pressed="true">轻记 · 只点大牌</button>
+        <button data-lite="0" aria-pressed="false">全记 · 按墩记录</button>
+      </div>
+      <p class="note" id="liteNote"></p>
+    </div>
+
+    <div class="card" id="bigBoard" hidden>
+      <h3>别家手上还有</h3>
+      <div class="readout r4" id="bigCells"></div>
+      <p class="note" id="bigNote"></p>
+    </div>
+
+    <div class="card" id="tableCard">
+      <h3>牌桌</h3>
+      <div class="seats" id="seats"></div>
+      <div class="table-now" id="tableNow"></div>
+    </div>
+
+    <div class="card">
+      <div class="seg red" id="modeSeg">
+        <button data-mode="hand" aria-pressed="true">登记手牌</button>
+        <button data-mode="play" aria-pressed="false">记录出牌</button>
+      </div>
+      <p class="note" id="modeNote"></p>
+      <div class="grid" id="grid"></div>
+      <div id="pendWrap"></div>
+      <div class="btnrow" id="trackBtns" style="margin-top:11px"></div>
+    </div>
+
+    <h2 class="sec">场面</h2>
+    <div class="card">
+      <div class="readout" id="roCard">
+        <div><div class="k">别家手上</div><div class="v" id="roHidden">108</div></div>
+        <div><div class="k">我的手牌</div><div class="v jade" id="roMine">0</div></div>
+        <div><div class="k">大牌未现</div><div class="v red" id="roBig">20</div></div>
+      </div>
+      <div id="alerts"></div>
+    </div>
+
+    <div class="card" id="knowCard" hidden>
+      <h3>从「过牌」推出来的</h3>
+      <div class="knows" id="knows"></div>
+      <p class="note">某家在对手压着的时候选择过，说明他确实压不动。对家压着时的过不算数，已经排除。</p>
+    </div>
+  </section>
+
+  <section class="panel" id="p-help"><div id="helpBody"></div></section>
+
+  <section class="panel" id="p-score">
+    <div id="winBox"></div>
+    <div class="card">
+      <div class="teams">
+        <div class="team a" id="teamA">
+          <div class="crown" id="crownA" hidden>本局打这级</div>
+          <input id="nameA" maxlength="6" aria-label="我方队名">
+          <div class="lv" id="lvA">2</div>
+          <div class="cap">当前级别</div>
+          <div class="tries" id="triesA"></div>
+        </div>
+        <div class="vs">VS</div>
+        <div class="team b" id="teamB">
+          <div class="crown" id="crownB" hidden>本局打这级</div>
+          <input id="nameB" maxlength="6" aria-label="对方队名">
+          <div class="lv" id="lvB">2</div>
+          <div class="cap">当前级别</div>
+          <div class="tries" id="triesB"></div>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="sec">记本局</h2>
+    <div class="card">
+      <h3>谁拿了头游</h3>
+      <div class="seg s4" id="winSeg"></div>
+      <h3 style="margin-top:14px">头游的对家排第几</h3>
+      <div class="btnrow" style="display:grid;grid-template-columns:repeat(3,1fr)">
+        <button class="btn" data-up="3">二游 · 双下<br><span class="mono" style="font-size:12px;color:var(--muted)">升 3 级</span></button>
+        <button class="btn" data-up="2">三游<br><span class="mono" style="font-size:12px;color:var(--muted)">升 2 级</span></button>
+        <button class="btn" data-up="1">四游<br><span class="mono" style="font-size:12px;color:var(--muted)">升 1 级</span></button>
+      </div>
+    </div>
+
+    <h2 class="sec">进贡</h2>
+    <div class="card" id="tributeCard"></div>
+
+    <h2 class="sec">牌局记录</h2>
+    <div class="card">
+      <div id="logBox"></div>
+      <div class="btnrow" style="margin-top:12px">
+        <button class="btn ghost" id="undoRound">撤销上一局</button>
+        <button class="btn ghost" id="newMatch">重开比赛</button>
+      </div>
+      <p class="note">过 A 规则：打 A 时拿到头游即算过 A 获胜；三次打 A 未过，退回打 2。升级不越 A（如打 K 升 3 级只到 A）。</p>
+    </div>
+  </section>
+
+  <div class="foot">数据存在这台设备的浏览器里，关掉页面也在。<br>牌型判断不看花色，同花顺需自行留意。</div>
+</div>
+
+<script>
+"use strict";
+/* ==========================================================
+   牌面模型：两副牌 108 张
+   ========================================================== */
+const RANKS = [{k:'2',v:2},{k:'3',v:3},{k:'4',v:4},{k:'5',v:5},{k:'6',v:6},{k:'7',v:7},
+  {k:'8',v:8},{k:'9',v:9},{k:'10',v:10},{k:'J',v:11},{k:'Q',v:12},{k:'K',v:13},{k:'A',v:14}];
+const JOKERS = [{k:'SJ',v:16,label:'小王'},{k:'BJ',v:17,label:'大王'}];
+const ALL = [...RANKS, ...JOKERS];
+const TOTAL = k => (k==='SJ'||k==='BJ') ? 2 : 8;
+const LABEL = k => k==='SJ' ? '小王' : k==='BJ' ? '大王' : k;
+const byVal = {}; ALL.forEach(r=>byVal[r.v]=r.k);
+const rankStr = v => byVal[v] || String(v);
+const strength = v => v===S.level ? 15 : v;      // 级牌插在 A 之上、小王之下
+const idxRank = i => i===1 ? 14 : i;             // 顺子里 A 可当最小
+const TYPE_CN = {single:'单张',pair:'对子',triple:'三张',full:'三带二',
+  straight:'顺子',tube:'三连对',plate:'钢板',bomb:'炸弹',rocket:'天王炸'};
+
+/* 座位：出牌顺序 我 → 下家 → 对家 → 上家 */
+const SEATS = ['我','下家','对家','上家'];
+const isFoe = (a,b) => (a%2)!==(b%2);
+
+const LS = 'guandan-assist-v2';
+const S = {
+  lite:true,
+  level:2, wilds:0, mode:'hand', tab:'track',
+  mine:{}, seen:{}, trace:[],
+  left:[27,27,27,27], turn:0,
+  top:null, topBy:null, passes:0,
+  cant:[{},{},{},{}],
+  pend:{}, pendWild:0,
+  teams:{a:{name:'我方',lv:2,tries:0}, b:{name:'对方',lv:2,tries:0}},
+  playing:'a', winner:null, log:[], pickFirst:0, trackedAt:0
+};
+ALL.forEach(r=>{ S.mine[r.k]=0; S.seen[r.k]=0; });
+
+const $ = s => document.querySelector(s);
+const el = (t,c,txt)=>{ const n=document.createElement(t); if(c)n.className=c; if(txt!=null)n.textContent=txt; return n; };
+function save(){ try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(e){} }
+function load(){
+  try{
+    const d = JSON.parse(localStorage.getItem(LS)||'null'); if(!d) return;
+    Object.assign(S, d);
+    if(d.lite===undefined) S.lite = true;
+    ALL.forEach(r=>{ S.mine[r.k]=S.mine[r.k]||0; S.seen[r.k]=S.seen[r.k]||0; });
+  }catch(e){}
+}
+
+/* ==========================================================
+   牌型：识别 / 比大小
+   ========================================================== */
+function beats(p, q){
+  if(!q) return true;
+  if(p.type==='rocket') return q.type!=='rocket';
+  if(q.type==='rocket') return false;
+  if(p.type==='bomb' && q.type!=='bomb') return true;
+  if(p.type!=='bomb' && q.type==='bomb') return false;
+  if(p.type==='bomb') return p.size!==q.size ? p.size>q.size : p.str>q.str;
+  return p.type===q.type && p.size===q.size && p.str>q.str;
+}
+/* 从一堆点数（含 wild 张逢人配）认出牌型 */
+function identify(cnt, wild, sj, bj){
+  const n = Object.values(cnt).reduce((a,b)=>a+b,0) + wild + sj + bj;
+  if(n===0) return null;
+  if(sj===2 && bj===2 && n===4) return {type:'rocket', str:99, size:4};
+  if(sj+bj>0){                                   // 王只能单出或成对
+    if(n===1) return {type:'single', str: sj?16:17, size:1};
+    if(n===2 && (sj===2||bj===2)) return {type:'pair', str: sj===2?16:17, size:2};
+    return null;
+  }
+  const ranks = Object.keys(cnt).map(Number).filter(v=>cnt[v]>0);
+  // 同点数：单/对/三/炸
+  if(ranks.length===1){
+    const v = ranks[0], t = cnt[v]+wild;
+    if(t===1) return {type:'single', str:strength(v), size:1};
+    if(t===2) return {type:'pair', str:strength(v), size:2};
+    if(t===3) return {type:'triple', str:strength(v), size:3};
+    if(t>=4)  return {type:'bomb', str:strength(v), size:t};
+    return null;
+  }
+  if(wild===0 && ranks.length===0) return null;
+  // 试着把逢人配填到各个点数上，逐一验证
+  const bases = [{}]; const pool = {};
+  ranks.forEach(v=>pool[v]=cnt[v]);
+  const tryFill = (extra)=>{
+    const c = {...pool};
+    extra.forEach(v=> c[v]=(c[v]||0)+1);
+    return c;
+  };
+  const combos = [];
+  const opts = [];
+  for(let v=2;v<=14;v++) opts.push(v);
+  if(wild===0) combos.push([]);
+  else if(wild===1) opts.forEach(a=>combos.push([a]));
+  else opts.forEach(a=>opts.forEach(b=>{ if(a<=b) combos.push([a,b]); }));
+  for(const ex of combos){
+    const c = tryFill(ex);
+    const rs = Object.keys(c).map(Number).filter(v=>c[v]>0).sort((a,b)=>a-b);
+    const tot = rs.reduce((a,v)=>a+c[v],0);
+    if(tot!==n) continue;
+    // 三带二
+    if(n===5){
+      const t3 = rs.filter(v=>c[v]===3), t2 = rs.filter(v=>c[v]===2);
+      if(t3.length===1 && t2.length===1) return {type:'full', str:strength(t3[0]), size:5};
+    }
+    // 顺子 / 连对 / 钢板
+    const per = n===5 ? 1 : (n===6 && rs.length===3) ? 2 : (n===6 && rs.length===2) ? 3 : 0;
+    const need = per===1?5:per===2?3:per===3?2:0;
+    if(per && rs.length===need && rs.every(v=>c[v]===per)){
+      for(let s=1;s<=15-need;s++){
+        const want=[]; for(let i=s;i<s+need;i++) want.push(idxRank(i));
+        if(want.slice().sort((a,b)=>a-b).join()===rs.join())
+          return {type: per===1?'straight':per===2?'tube':'plate', str:s, size:n};
+      }
+    }
+  }
+  return null;
+}
+function playLabel(p, cnt, wild, sj, bj){
+  const parts=[];
+  Object.keys(cnt||{}).map(Number).sort((a,b)=>a-b).forEach(v=>{ for(let i=0;i<cnt[v];i++) parts.push(rankStr(v)); });
+  for(let i=0;i<(sj||0);i++) parts.push('小王');
+  for(let i=0;i<(bj||0);i++) parts.push('大王');
+  for(let i=0;i<(wild||0);i++) parts.push('♥'+rankStr(S.level));
+  return TYPE_CN[p.type]+' '+parts.join(' ');
+}
+
+/* ==========================================================
+   手数引擎：最少几手能出完
+   ========================================================== */
+const keyOf = (c,w) => { let k=''; for(let v=2;v<=14;v++) k+=(c[v]||0)+','; return k+'|'+w; };
+const DMEMO = new Map(), HMEMO = new Map();
+
+function seqCands(c){
+  const out=[];
+  for(let s=1;s<=10;s++){ const rs=[]; for(let i=s;i<s+5;i++) rs.push(idxRank(i)); out.push({type:'straight',s,ranks:rs,per:1,cards:5}); }
+  for(let s=1;s<=12;s++){ const rs=[]; for(let i=s;i<s+3;i++) rs.push(idxRank(i)); out.push({type:'tube',s,ranks:rs,per:2,cards:6}); }
+  for(let s=1;s<=13;s++){ const rs=[]; for(let i=s;i<s+2;i++) rs.push(idxRank(i)); out.push({type:'plate',s,ranks:rs,per:3,cards:6}); }
+  return out.filter(x=> new Set(x.ranks).size===x.ranks.length && x.ranks.every(r=>(c[r]||0)>=x.per));
+}
+function closeout(c){
+  let B=0,T=0,P=0,G=0;
+  for(let v=2;v<=14;v++){ const n=c[v]||0;
+    if(n>=4)B++; else if(n===3)T++; else if(n===2)P++; else if(n===1)G++; }
+  return B + T + Math.max(0,P-T) + G;
+}
+/* 穷举连张牌型的取法（记忆化，顺序无关） */
+function dfs(c){
+  const k = keyOf(c,0);
+  if(DMEMO.has(k)) return DMEMO.get(k);
+  let best = {h:closeout(c), seq:[]};
+  for(const cand of seqCands(c)){
+    const c2 = {...c}; cand.ranks.forEach(r=> c2[r]-=cand.per);
+    const sub = dfs(c2);
+    if(1+sub.h < best.h) best = {h:1+sub.h, seq:[cand, ...sub.seq]};
+  }
+  if(DMEMO.size < 60000) DMEMO.set(k, best);
+  return best;
+}
+function wildAssigns(w){
+  if(w===0) return [[]];
+  const opts=[null]; for(let v=2;v<=14;v++) opts.push(v);
+  if(w===1) return opts.map(a=>[a]);
+  const out=[]; for(let i=0;i<opts.length;i++) for(let j=i;j<opts.length;j++) out.push([opts[i],opts[j]]);
+  return out;
+}
+/* st = {c, w, sj, bj} → {h, plan} */
+function minHands(st, wantPlan){
+  const k = keyOf(st.c, st.w)+'/'+st.sj+st.bj;
+  if(!wantPlan && HMEMO.has(k)) return HMEMO.get(k);
+  const jp = (st.sj===2&&st.bj===2) ? 1 : (st.sj===2?1:st.sj)+(st.bj===2?1:st.bj);
+  let best=null;
+  for(const as of wildAssigns(st.w)){
+    const c = {...st.c}; const used=[];
+    let unused=0;
+    for(const t of as){ if(t==null){ unused++; c[S.level]=(c[S.level]||0)+1; } else { c[t]=(c[t]||0)+1; used.push(t); } }
+    // 炸弹不预先抽走 —— 让搜索自己决定要不要拿一张去接顺子，closeout 里剩下的四张以上算一手
+    const r = dfs(c);
+    const h = jp + r.h;
+    const rest = {...c};                            // 扣掉连张牌型后剩下的散牌
+    r.seq.forEach(q=> q.ranks.forEach(rk=> rest[rk]-=q.per));
+    const bombs=[];
+    for(let v=2;v<=14;v++) if((rest[v]||0)>=4) bombs.push({v, n:rest[v]});
+    const score = h*100 - bombs.length*30;          // 同手数时优先保住炸弹
+    if(!best || score < best.score) best = {h, score, bombs, seq:r.seq, rest, used, unused};
+  }
+  const res = {h:best.h, plan:best};
+  if(!wantPlan){ if(HMEMO.size<60000) HMEMO.set(k,res); }
+  return res;
+}
+const minH = st => minHands(st).h;
+
+/* 同一副牌，强制留住炸弹时最少要几手（用来把「拆炸弹换手数」这个取舍摆出来） */
+function minHandsKeepBombs(st){
+  const jp = (st.sj===2&&st.bj===2) ? 1 : (st.sj===2?1:st.sj)+(st.bj===2?1:st.bj);
+  let best=Infinity, bestPlan=null;
+  for(const as of wildAssigns(st.w)){
+    const c={...st.c}; const used=[]; let unused=0;
+    for(const t of as){ if(t==null){ unused++; c[S.level]=(c[S.level]||0)+1; } else { c[t]=(c[t]||0)+1; used.push(t); } }
+    const bombs=[];
+    for(let v=2;v<=14;v++) if((c[v]||0)>=4){ bombs.push({v,n:c[v]}); c[v]=0; }
+    const r=dfs(c), h=bombs.length+jp+r.h;
+    if(h<best){
+      const rest={...c}; r.seq.forEach(q=>q.ranks.forEach(rk=>rest[rk]-=q.per));
+      best=h; bestPlan={h, bombs, seq:r.seq, rest, used, unused};
+    }
+  }
+  return bestPlan;
+}
+
+/* 我的当前手牌（把红桃级牌单独拎出来当逢人配） */
+function myState(){
+  const c={}; for(let v=2;v<=14;v++) c[v]=0;
+  RANKS.forEach(r=> c[r.v]=S.mine[r.k]);
+  const w = Math.min(S.wilds, c[S.level]);
+  c[S.level]-=w;
+  return {c, w, sj:S.mine.SJ, bj:S.mine.BJ};
+}
+const sizeOf = st => Object.values(st.c).reduce((a,b)=>a+b,0)+st.w+st.sj+st.bj;
+
+/* ==========================================================
+   枚举我能打出的所有牌型
+   ========================================================== */
+function enumPlays(st){
+  const {c,w,sj,bj} = st, out=[];
+  const push = o => out.push({wild:0, sj:0, bj:0, use:{}, ...o});
+  for(let v=2;v<=14;v++){
+    const have=c[v]||0; if(have===0) continue;
+    const str=strength(v);
+    [1,2,3].forEach(n=>{
+      if(have+w < n) return;
+      push({type:n===1?'single':n===2?'pair':'triple', str, size:n,
+        label:rankStr(v)+(n>1?'×'+n:''), use:{[v]:Math.min(have,n)}, wild:Math.max(0,n-have)});
+    });
+    const bn = Math.min(8, have+w);                 // 炸弹整个打出去，不拆
+    if(bn>=4) push({type:'bomb', str, size:bn, label:rankStr(v)+' '+bn+'张炸',
+      use:{[v]:have}, wild:bn-have});
+  }
+  if(sj>=1) push({type:'single', str:16, size:1, label:'小王', sj:1});
+  if(bj>=1) push({type:'single', str:17, size:1, label:'大王', bj:1});
+  if(sj>=2) push({type:'pair', str:16, size:2, label:'一对小王', sj:2});
+  if(bj>=2) push({type:'pair', str:17, size:2, label:'一对大王', bj:2});
+  if(sj>=2&&bj>=2) push({type:'rocket', str:99, size:4, label:'四王炸', sj:2, bj:2});
+  // 三带二：每个三张配一个最小的对子
+  for(let v=2;v<=14;v++){
+    if((c[v]||0)+w < 3 || (c[v]||0)===0) continue;
+    const wv = Math.max(0, 3-(c[v]||0));
+    for(let p=2;p<=14;p++){
+      if(p===v) continue;
+      const wp = Math.max(0, 2-(c[p]||0));
+      if((c[p]||0)===0 || wv+wp > w) continue;
+      push({type:'full', str:strength(v), size:5, label:rankStr(v)+'三张带'+rankStr(p)+'对',
+        use:{[v]:Math.min(c[v],3), [p]:Math.min(c[p],2)}, wild:wv+wp});
+      break;
+    }
+  }
+  // 顺子 / 连对 / 钢板
+  [['straight',1,5],['tube',2,3],['plate',3,2]].forEach(([type,per,len])=>{
+    for(let s=1;s<=15-len;s++){
+      const use={}; let need=0, ok=true, real=0;
+      for(let i=s;i<s+len;i++){
+        const r=idxRank(i); if(use[r]!==undefined){ok=false;break;}
+        const have=Math.min(c[r]||0, per); use[r]=have; real+=have; need+=per-have;
+      }
+      if(!ok || need>w || real===0) continue;
+      const rs=[]; for(let i=s;i<s+len;i++) rs.push(rankStr(idxRank(i)));
+      push({type, str:s, size:per*len, label:rs.join(per===1?'':'·'), use, wild:need});
+    }
+  });
+  return out;
+}
+function afterPlay(st, p){
+  const c={...st.c};
+  for(const r in p.use) c[r]-=p.use[r];
+  return {c, w:st.w-p.wild, sj:st.sj-p.sj, bj:st.bj-p.bj};
+}
+
+/* ==========================================================
+   出牌建议
+   ========================================================== */
+function advise(){
+  const st = myState(), n = sizeOf(st);
+  if(n===0) return {state:'empty'};
+  const base = minH(st);
+  const toBeat = S.top;
+  const partnerLeft = S.left[2];
+  const foes = [1,3].filter(i=>S.left[i]>0);
+  let foeSeat = null, foeLeft = Infinity;
+  foes.forEach(i=>{ if(S.left[i]<foeLeft){ foeLeft=S.left[i]; foeSeat=i; } });
+  const foeClose = foeLeft<=2, partnerClose = partnerLeft>0 && partnerLeft<=2;
+
+  let cands = enumPlays(st);
+  if(toBeat) cands = cands.filter(p=> beats(p, toBeat));
+
+  const withAfter = cands.map(p=> ({...p, after: minH(afterPlay(st,p))}));
+  // 每一手合法出牌都给出手数上界：H(手牌) ≤ 1 + H(出牌后)，用它把估计收紧，delta 才不会出负数
+  const tight = withAfter.reduce((m,p)=> Math.min(m, p.after+1), base);
+  const scored = withAfter.map(p=>{
+    const after = p.after;
+    const delta = Math.max(0, after - (tight-1));   // 0 = 不拆任何牌型
+    let sc = delta*1000 - p.size*8 + p.str*3;
+    // 从一个已经成炸的点数里抽牌去接顺子 —— 手数省得多才划算
+    const dissolves = Object.keys(p.use).some(r=> (st.c[r]||0)>=4 && p.use[r]>0 && p.use[r]<st.c[r]);
+    if(dissolves) sc += 350;
+    if(p.type==='bomb'||p.type==='rocket') sc += foeClose ? 60 : 500;
+    if(p.wild) sc += 130;
+    if(partnerClose && p.type==='single' && p.str<=9) sc -= 550;
+    if(foeClose) sc -= p.str*14;                    // 对手要走了，出他压不住的
+    return {...p, after, delta, sc};
+  }).sort((a,b)=> a.sc-b.sc || a.str-b.str);
+  const shown = tight;
+
+  const why = p => {
+    const bits=[];
+    // delta 0 = 少一手；1 = 手数不变，但牌少了、还拿到上手权；≥2 才是真倒退
+    bits.push(p.delta===0 ? '净赚一手' : p.delta===1 ? '手数不变，白赚一次上手权' : '倒退 '+(p.delta-1)+' 手');
+    bits.push('手数 '+shown+' → '+p.after);
+    if(p.wild) bits.push('用掉 '+p.wild+' 张逢人配');
+    if(p.type==='bomb'||p.type==='rocket') bits.push('动炸弹');
+    return bits.join('，')+'。';
+  };
+
+  /* 跟牌 */
+  if(toBeat){
+    const topName = SEATS[S.topBy];
+    // 对家已经走完了就不用让 —— 这时候压过去拿回上手权才对
+    if(S.topBy===2 && partnerLeft>0 && !foeClose)
+      return {state:'follow', verdict:'放', head:'过 —— 别压对家',
+        why:'桌上最大的是对家（还剩 '+partnerLeft+' 张）打的，你压过去等于自己人打自己人。放他走这一轮。',
+        list:scored.slice(0,3), base:shown, why2:why};
+    if(!scored.length)
+      return {state:'follow', verdict:'过', head:'过 —— 压不住',
+        why:'手上没有能压过 '+topName+' 这手的牌。'+(st.w?'逢人配也补不出来。':''),
+        list:[], base:shown, why2:why};
+    const best = scored[0];
+    const behind = n > foeLeft;                     // 我的牌比对手多，更需要抢节奏
+    const tooCostly = best.delta>=2;                // 真倒退
+    const pettyCost = best.delta===1 && !behind && best.size<=2;   // 手数不变，但只甩得掉一两张小牌
+    if((tooCostly || pettyCost) && !foeClose)
+      return {state:'follow', verdict:'过', head:'过 —— 不值得',
+        why:(tooCostly
+            ? '能压，但最省的一手也要倒退 '+(best.delta-1)+' 手（'+best.label+'，手数 '+shown+' → '+best.after+'）。'
+            : '能压，但只压得动 '+best.label+'，手数不动、才走一两张，你也不落后（你 '+n+' 张，对手 '+foeLeft+' 张）。')
+          +'不急着这一轮，把牌型留着。',
+        list:scored.slice(0,3), base:shown, why2:why};
+    return {state:'follow', verdict: foeClose?'必压':'出',
+      head:(foeClose?'压住 —— ':'')+best.label,
+      why:(foeClose ? SEATS[foeSeat]+'只剩 '+foeLeft+' 张，这一轮必须拦下来。' : '')+why(best),
+      list:scored.slice(0,4), base:shown, why2:why, best};
+  }
+
+  /* 先手 */
+  if(!scored.length) return {state:'empty'};
+  const best = scored[0];
+  let head = best.label, extra = '';
+  if(partnerClose) extra = '对家只剩 '+partnerLeft+' 张，出小单张把上手权送过去，他接得住就直接走了。';
+  else if(foeClose) extra = SEATS[foeSeat]+'只剩 '+foeLeft+' 张，先手就出他压不住的牌把路堵死。';
+  return {state:'lead', verdict:'出', head, why:(extra?extra+' ':'')+why(best),
+    list:scored.slice(0,4), base:shown, why2:why, best};
+}
+
+/* ==========================================================
+   记牌器
+   ========================================================== */
+/* 值得花点击的点数：级牌、A、大小王 —— 一副牌里总共 20 张 */
+const isKey = k => k==='SJ' || k==='BJ' || k==='A' || (RANKS.find(r=>r.k===k)||{}).v===S.level;
+
+const MODE_NOTE = {
+  hand:'发牌后把自己的 27 张全点一遍。你的牌也算「已现身」，格子上的数字＝还藏在别家手里的张数。',
+  play:'点出这一手的牌 →「确定」。轮到谁自动往下走，剩牌数和过牌推断都跟着算。没牌出就点「过」。'
+};
+const LITE_ONE = '格子上的数字＝这门牌还有几张<b>在别家手里</b>。开局先把你自己手上的大牌点掉，'
+  +'之后每有一张大牌打到桌上就点一下。<b>同一张牌只点一次</b>——你自己那几张开局点过了，轮到你出的时候不用再管。';
+const LITE_NOTE = {
+  1:'一副牌里真正影响决策的只有 20 张：级牌 8 张、A 8 张、大小王 4 张。只记这些，一局大约 20 次点击，剩下的时间用来看牌桌。',
+  0:'每一手牌都记，换来三家剩牌数、过牌推断和完整的出牌建议。信息最全，但一局要点一百多次——适合复盘或者慢局。'
+};
+function setLite(v){
+  S.lite = !!v;
+  document.querySelectorAll('#liteSeg button').forEach(b=> b.setAttribute('aria-pressed', (b.dataset.lite==='1')===S.lite));
+  $('#liteNote').textContent = LITE_NOTE[S.lite?1:0];
+  if(S.lite){ S.pend={}; S.pendWild=0; }
+  renderAll(); save();
+}
+function setMode(m){
+  S.mode=m; S.pend={}; S.pendWild=0;
+  document.querySelectorAll('#modeSeg button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.mode===m));
+  renderAll(); save();
+}
+document.querySelectorAll('#modeSeg button').forEach(b=> b.onclick=()=>setMode(b.dataset.mode));
+document.querySelectorAll('#liteSeg button').forEach(b=> b.onclick=()=>setLite(b.dataset.lite==='1'));
+
+const pendCount = () => Object.values(S.pend).reduce((a,b)=>a+b,0) + S.pendWild;
+function tapTile(k){
+  if(S.lite){                                              // 轻记只有一个动作：这张牌不在别家手里了
+    if(S.seen[k] >= TOTAL(k)) return;
+    S.seen[k]++; S.trace.push({t:'seen', k});
+    renderAll(); save(); return;
+  }
+  if(S.mode==='hand'){
+    if(S.seen[k] >= TOTAL(k)) return;
+    S.mine[k]++; S.seen[k]++; S.trace.push({t:'hand', k});
+  } else {
+    const used = S.pend[k]||0;
+    if(S.seen[k] + used >= TOTAL(k)) return;
+    if(S.turn===0 && (S.mine[k]||0) - used <= 0) return;   // 自己出牌不能超过手上的
+    S.pend[k] = used+1;
+  }
+  renderAll(); save();
+}
+function undoStep(){
+  const a = S.trace.pop(); if(!a) return;
+  if(a.t==='hand'){ S.mine[a.k]--; S.seen[a.k]--; }
+  else if(a.t==='seen'){ S.seen[a.k]--; }
+  else if(a.t==='play'){
+    for(const k in a.cnt){ S.seen[k]-=a.cnt[k]; if(a.seat===0) S.mine[k]+=a.cnt[k]; }
+    if(a.wild){ const lk=byVal[S.level]; S.seen[lk]-=a.wild; if(a.seat===0) S.mine[lk]+=a.wild; }
+    S.left[a.seat]=a.leftBefore; S.turn=a.turnBefore;
+    S.top=a.topBefore; S.topBy=a.topByBefore; S.passes=a.passesBefore;
+    S.cant = a.cantBefore;
+    if(a.wildsBefore!=null) S.wilds = a.wildsBefore;
+  } else if(a.t==='pass'){
+    S.turn=a.turnBefore; S.passes=a.passesBefore; S.cant=a.cantBefore;
+    S.top=a.topBefore; S.topBy=a.topByBefore;
+  }
+  renderAll(); save();
+}
+const nextSeat = s => { for(let i=1;i<=4;i++){ const t=(s+i)%4; if(S.left[t]>0) return t; } return s; };
+const activeCount = () => S.left.filter(x=>x>0).length;
+
+function commitPlay(){
+  const n = pendCount(); if(n===0) return;
+  const cnt = {}; let sj=0,bj=0;
+  for(const k in S.pend){ if(!S.pend[k]) continue; if(k==='SJ') sj=S.pend[k]; else if(k==='BJ') bj=S.pend[k]; else cnt[RANKS.find(r=>r.k===k).v]=S.pend[k]; }
+  const p = identify(cnt, S.pendWild, sj, bj);
+  if(!p) return;
+  const seat = S.turn;
+  const snap = {t:'play', seat, cnt:{}, wild:S.pendWild,
+    leftBefore:S.left[seat], turnBefore:S.turn, topBefore:S.top, topByBefore:S.topBy,
+    passesBefore:S.passes, cantBefore:JSON.parse(JSON.stringify(S.cant)), wildsBefore:S.wilds};
+  for(const k in S.pend) if(S.pend[k]) snap.cnt[k]=S.pend[k];
+
+  for(const k in S.pend){ if(S.pend[k]){ S.seen[k]+= S.pend[k]; if(seat===0) S.mine[k]-=S.pend[k]; } }
+  if(S.pendWild){ const lk=byVal[S.level]; S.seen[lk]+=S.pendWild; if(seat===0) S.mine[lk]-=S.pendWild; }
+  S.left[seat] = Math.max(0, S.left[seat]-n);
+  if(seat===0 && S.pendWild) S.wilds = Math.max(0, S.wilds - S.pendWild);
+
+  if(beats(p, S.top)){ S.top=p; S.topBy=seat; }
+  S.passes = 0;
+  S.trace.push(snap);
+  S.pend={}; S.pendWild=0;
+  S.turn = nextSeat(seat);
+  renderAll(); save();
+}
+function commitPass(){
+  const seat = S.turn;
+  if(!S.top) return;                              // 先手方必须出牌，不能过
+  const snap = {t:'pass', turnBefore:S.turn, passesBefore:S.passes, topBefore:S.top, topByBefore:S.topBy,
+    cantBefore:JSON.parse(JSON.stringify(S.cant))};
+  // 只有在「对手压着」时的过才是真信息
+  if(S.top && S.topBy!=null && isFoe(seat, S.topBy)){
+    const key = S.top.type+'/'+S.top.size;
+    const cur = S.cant[seat][key];
+    if(cur==null || S.top.str < cur) S.cant[seat][key] = S.top.str;
+  }
+  S.passes++;
+  S.trace.push(snap);
+  if(S.passes >= activeCount()-1 && S.top){       // 一圈都过了，这墩结束
+    S.turn = S.topBy; S.top=null; S.topBy=null; S.passes=0;
+  } else {
+    S.turn = nextSeat(seat);
+  }
+  renderAll(); save();
+}
+
+function renderSeats(){
+  const box = $('#seats'); box.innerHTML='';
+  SEATS.forEach((nm,i)=>{
+    const d = el('button','seat'+(i===0?' me':'')+(i===S.turn?' turn':'')+(S.left[i]===0?' done':''));
+    d.appendChild(el('span','nm', nm));
+    d.appendChild(el('span','lf', String(S.left[i])));
+    const st = el('span','st');
+    if(S.left[i]===0) st.textContent='已走';
+    else if(i===S.topBy){ st.textContent='台面最大'; st.className='st top-mark'; }
+    else if(i===S.turn) st.textContent = i===0 ? '该你出' : '该他出';
+    d.appendChild(st);
+    d.onclick = ()=>{ S.turn=i; renderAll(); save(); };
+    box.appendChild(d);
+  });
+  const t = $('#tableNow'); t.innerHTML='';
+  t.appendChild(el('span','k','台面'));
+  if(S.top){
+    t.appendChild(el('span','v', TYPE_CN[S.top.type]+' · '+
+      (['straight','tube','plate'].includes(S.top.type) ? '起 '+rankStr(idxRank(S.top.str))
+        : S.top.str===99?'四王' : S.top.str===16?'小王' : S.top.str===17?'大王'
+        : S.top.str===15?rankStr(S.level)+'（级牌）' : rankStr(S.top.str))
+      + (S.top.type==='bomb' ? ' '+S.top.size+'张' : '')));
+    t.appendChild(el('span','by', SEATS[S.topBy]+'打的 · 轮到'+SEATS[S.turn]));
+  } else {
+    t.appendChild(el('span','v','空 —— 新的一墩'));
+    t.appendChild(el('span','by', SEATS[S.turn]+'先手'));
+  }
+}
+function renderGrid(){
+  const g = $('#grid'); g.innerHTML='';
+  g.className = 'grid' + (S.lite?' lite':'');
+  ALL.forEach(r=>{
+    const t=TOTAL(r.k), left=t-S.seen[r.k], sel=S.pend[r.k]||0;
+    const mine = S.mine[r.k]||0;
+    const b = el('button','tile'+(r.v===S.level?' lvl':'')+((r.k==='SJ'||r.k==='BJ')?' joker':'')
+      +(S.lite ? (left===0?' owned':'')
+               : (left===0 && mine===0 ? ' empty':'')+(left-sel===0 && mine>0 ? ' owned':''))+(sel?' sel':'')
+      +(isKey(r.k)?' key':''));
+    const row=el('div','row');
+    row.appendChild(el('span','rk',LABEL(r.k)));
+    row.appendChild(el('span','lf',String(left-sel)));
+    b.appendChild(row);
+    const pips=el('div','pips');
+    for(let i=0;i<t;i++) pips.appendChild(el('i','pip'+(i<left-sel?' on':'')));
+    b.appendChild(pips);
+    if(!S.lite){                                   // 轻记不追自己手上有几张，那你自己看得见
+      const m=el('span','mine');
+      if(mine>0) m.innerHTML='我 <b>'+mine+'</b>';
+      b.appendChild(m);
+    }
+    if(sel) b.appendChild(el('span','badge','+'+sel));
+    b.onclick = ()=> tapTile(r.k);
+    g.appendChild(b);
+  });
+}
+function renderPend(){
+  const w = $('#pendWrap'); w.innerHTML='';
+  const btns = $('#trackBtns'); btns.innerHTML='';
+  if(S.lite){
+    const b1=el('button','btn ghost','撤销上一步'); b1.onclick=undoStep;
+    const b2=el('button','btn ghost','开新一局'); b2.onclick=resetRound;
+    btns.append(b1,b2); return;
+  }
+  if(S.mode==='hand'){
+    const b1=el('button','btn ghost','撤销上一步'); b1.onclick=undoStep;
+    const b2=el('button','btn ghost','开新一局'); b2.onclick=resetRound;
+    const b3=el('button','btn','登记完，开打'); b3.onclick=()=>setMode('play');
+    btns.append(b3,b1,b2); return;
+  }
+  const n = pendCount();
+  const box = el('div','pendbar');
+  box.appendChild(el('div','lab', SEATS[S.turn]+' 这一手'));
+  const v = el('div','val');
+  if(n===0) v.innerHTML='<em>点上面的牌…</em>';
+  else{
+    const parts=[];
+    ALL.forEach(r=>{ for(let i=0;i<(S.pend[r.k]||0);i++) parts.push(LABEL(r.k)); });
+    for(let i=0;i<S.pendWild;i++) parts.push('♥'+rankStr(S.level));
+    v.textContent = parts.join(' ');
+  }
+  box.appendChild(v);
+  let p=null;
+  if(n>0){
+    const cnt={}; let sj=0,bj=0;
+    for(const k in S.pend){ if(!S.pend[k])continue; if(k==='SJ')sj=S.pend[k]; else if(k==='BJ')bj=S.pend[k]; else cnt[RANKS.find(r=>r.k===k).v]=S.pend[k]; }
+    p = identify(cnt, S.pendWild, sj, bj);
+    const kd = el('div','kind'+(p?'':' bad'));
+    kd.textContent = p ? TYPE_CN[p.type]+(S.top && !beats(p,S.top) ? '（压不过台面，会当新一墩记）' : '')
+                       : '认不出这个牌型，检查一下张数';
+    box.appendChild(kd);
+  }
+  w.appendChild(box);
+
+  const ok=el('button','btn jade','确定出牌'); ok.disabled=!p; ok.onclick=commitPlay;
+  const ps=el('button','btn gold','过'); ps.onclick=commitPass;
+  const wd=el('button','btn','＋逢人配'); wd.onclick=()=>{ S.pendWild++; renderAll(); };
+  const cl=el('button','btn ghost','清空'); cl.onclick=()=>{ S.pend={}; S.pendWild=0; renderAll(); };
+  const ud=el('button','btn ghost','撤销上一步'); ud.onclick=undoStep;
+  btns.append(ok,ps,wd,cl,ud);
+}
+function resetRound(){
+  if(!confirm('清空记牌和牌桌，开始新一局？（比分不受影响）')) return;
+  clearTrack();
+}
+/* 轻记的看板：只有这 20 张牌值得你抬手 */
+function renderBigBoard(){
+  const cells = $('#bigCells'); cells.innerHTML='';
+  const keys = [['BJ','大王'],['SJ','小王'],[byVal[S.level],'级牌 '+rankStr(S.level)],['A','A']];
+  keys.forEach(([k,label])=>{
+    const left = Math.max(0, TOTAL(k)-S.seen[k]);
+    const d = el('div');
+    d.appendChild(el('div','k',label));
+    const v = el('div','v'+(left===0?' jade':''));   // 归零＝好消息，别家没有了
+    v.textContent = left;
+    d.appendChild(v);
+    cells.appendChild(d);
+  });
+  const gone = 20 - keys.reduce((a,[k])=>a+Math.max(0,TOTAL(k)-S.seen[k]),0);
+  $('#bigNote').textContent = gone===0
+    ? '还没记任何大牌。先点掉你自己手上的，剩下的等别人打出来再点。'
+    : '20 张大牌里已经有 '+gone+' 张不在别家手里了（含你自己的）。数字归零＝这门牌你随便走。';
+}
+function renderReadout(){
+  let mineN=0, seenN=0;
+  ALL.forEach(r=>{ mineN+=S.mine[r.k]; seenN+=S.seen[r.k]; });
+  $('#roHidden').textContent = 108-seenN;
+  $('#roMine').textContent = mineN;
+  const bigKeys=['A', byVal[S.level], 'SJ','BJ'];
+  let big=0; new Set(bigKeys).forEach(k=> big += TOTAL(k)-S.seen[k]);
+  $('#roBig').textContent = Math.max(0,big);
+
+  const box=$('#alerts'); box.innerHTML='';
+  const line=(cls,ic,html)=>{ const d=el('div','alertline'+(cls?' '+cls:'')); d.appendChild(el('span','ic',ic));
+    const s=el('span'); s.innerHTML=html; d.appendChild(s); box.appendChild(d); };
+  const owned = ALL.filter(r=> TOTAL(r.k)-S.seen[r.k]===0 && (S.mine[r.k]||0)>0).map(r=>LABEL(r.k));
+  if(S.lite){
+    // 轻记只记了大牌，小牌的统计不成立，别显示假精确的数字
+    $('#roCard').hidden = true;
+    const clear = [['BJ','大王'],['SJ','小王'],[byVal[S.level],'级牌'],['A','A']]
+      .filter(([k])=> TOTAL(k)-S.seen[k]<=0).map(([,n])=>n);
+    if(clear.length) line('calm','✓','别家手上<b>没有 '+clear.join('、')+'</b> 了。');
+    if((2-S.seen.SJ)+(2-S.seen.BJ)===0) line('calm','✓','四张王全部现身，<b>天王炸已排除</b>。');
+    if(clear.indexOf('A')>=0 && clear.indexOf('级牌')>=0 && clear.length>=3)
+      line('calm','✓','大牌基本走空，<b>你手上的大牌可以放心领牌了</b>。');
+    if(!box.children.length) line('calm','·','大牌打出来一张就点一张，这里会告诉你什么时候可以放心走牌。');
+    return;
+  }
+  $('#roCard').hidden = false;
+  if(seenN===0){ line('calm','·','先切到「登记手牌」把自己的 27 张点一遍，这里的统计才作数。'); }
+  else{
+    const risk = RANKS.map(r=>({k:r.k, out:8-S.seen[r.k]})).filter(x=>x.out>=4);
+    const jkOut = (2-S.seen.SJ)+(2-S.seen.BJ);
+    if(risk.length===0 && seenN>30) line('calm','✓','按已现身的牌算，别家<b>凑不出新的四张炸</b>了。');
+    else if(risk.length && risk.length<=6) line('','!','别家仍可能成炸：<b>'+risk.map(x=>LABEL(x.k)+'（'+x.out+'张）').join('、')+'</b>');
+    else if(risk.length && seenN>=27) line('','!','还有 <b>'+risk.length+' 个点数</b>凑得出四张炸，牌打开一些再看这里。');
+    if(jkOut===0) line('calm','✓','四张王<b>全部现身</b>，天王炸已排除。');
+    else if(seenN>20) line('','!','还有 <b>'+jkOut+' 张王</b>没露面。');
+    line('calm','·','别家手上：级牌 <b>'+Math.max(0,8-S.seen[byVal[S.level]])+'</b> 张，A <b>'+Math.max(0,8-S.seen.A)+'</b> 张。');
+    if(owned.length) line('calm','✓','别家已经没有 <b>'+owned.join('、')+'</b> 了，你手上这几张出去<b>没人压得住</b>。');
+  }
+}
+function renderKnows(){
+  const rows=[];
+  [1,2,3].forEach(i=>{
+    const keys = Object.keys(S.cant[i]);
+    if(!keys.length) return;
+    const txt = keys.map(k=>{
+      const [type,size]=k.split('/'); const str=S.cant[i][k];
+      const nm = TYPE_CN[type] + (type==='bomb'?' '+size+'张':'');
+      const val = ['straight','tube','plate'].includes(type) ? '起'+rankStr(idxRank(str))
+        : str===15 ? rankStr(S.level) : str===16?'小王':str===17?'大王':rankStr(str);
+      return nm+'压不过 '+val;
+    }).join('　');
+    rows.push({who:SEATS[i], txt});
+  });
+  const card=$('#knowCard'), box=$('#knows'); box.innerHTML='';
+  card.hidden = S.lite || rows.length===0;
+  rows.forEach(r=>{ const d=el('div','know'); d.appendChild(el('span','who',r.who));
+    d.appendChild(el('span','txt',r.txt)); box.appendChild(d); });
+}
+
+/* ==========================================================
+   出牌建议面板
+   ========================================================== */
+function renderHelp(){
+  const box=$('#helpBody'); box.innerHTML='';
+  // 轻记只登记了大牌，手数算不准，与其给个错的建议不如说清楚
+  if(S.lite){
+    const c=el('div','card');
+    c.appendChild(el('h3',null,'出牌建议需要完整手牌'));
+    c.appendChild(el('p','note','轻记模式不登记你的手牌，所以算不了手数——少了牌算出来的建议是错的，'
+      +'与其给个看着有理的错答案，不如不给。轻记的价值全在「记牌器」那页的大牌看板：'
+      +'什么时候你的 A 能放心走，看那四个数字就够了。'));
+    const b=el('button','btn wide','改成全记，登记完整手牌');
+    b.onclick=()=>{ setLite(false); switchTab('track'); setMode('hand'); };
+    c.appendChild(b); box.appendChild(c); return;
+  }
+  const a = advise();
+  if(a.state==='empty'){
+    const c=el('div','card');
+    c.appendChild(el('div','emptyhint','还没登记手牌。\n去「记牌器」切到「登记手牌」，把你的 27 张点一遍。'));
+    const b=el('button','btn wide','去登记手牌'); b.onclick=()=>{ switchTab('track'); setMode('hand'); };
+    c.appendChild(b); box.appendChild(c); return;
+  }
+
+  /* 建议 */
+  const c0=el('div','card');
+  c0.appendChild(el('h3',null, a.state==='lead' ? '轮到你先手' : '要不要跟'));
+  const cls = a.verdict==='放'||a.verdict==='过' ? 'pass' : a.verdict==='必压' ? 'blast' : '';
+  const head=el('div','adv first '+cls);
+  const h1=el('div','adv-head');
+  h1.appendChild(el('span','badge', a.verdict));
+  h1.appendChild(el('span','adv-play', a.head));
+  if(a.best) h1.appendChild(el('span','adv-h','手数 '+a.base+' → '+a.best.after));
+  head.appendChild(h1);
+  head.appendChild(el('div','adv-why', a.why));
+  c0.appendChild(head);
+  if(a.list && a.list.length>1){
+    c0.appendChild(el('h3',null,'其它选择'));
+    a.list.slice(a.verdict==='出'||a.verdict==='必压'?1:0).forEach(p=>{
+      const d=el('div','adv'); const hh=el('div','adv-head');
+      hh.appendChild(el('span','badge', p.delta===0?'净赚':p.delta===1?'持平':'倒退'+(p.delta-1)));
+      hh.appendChild(el('span','adv-play', p.label));
+      hh.appendChild(el('span','adv-h','→ '+p.after+' 手'));
+      d.appendChild(hh); d.appendChild(el('div','adv-why', a.why2(p)));
+      c0.appendChild(d);
+    });
+  }
+  c0.appendChild(el('p','note','排序标准是「边际手数」：出这一手之后，剩下的牌最少还要几手才能出完。手数不涨的牌先出，这是掼蛋出牌最硬的一条准则。'));
+  box.appendChild(c0);
+
+  /* 手牌概览 + 拆牌 */
+  const st=myState(), plan=minHands(st,true).plan, base=minH(st);
+  const c1=el('div','card');
+  c1.appendChild(el('h3',null,'手牌'));
+  const ro=el('div','readout');
+  ro.innerHTML='<div><div class="k">还剩几张</div><div class="v">'+sizeOf(st)+'</div></div>'
+    +'<div><div class="k">最少几手出完</div><div class="v jade">'+base+'</div></div>'
+    +'<div><div class="k">炸弹</div><div class="v red">'+(plan.bombs.length+((st.sj===2&&st.bj===2)?1:0))+'</div></div>';
+  c1.appendChild(ro);
+  const chips=el('div','chips'); chips.style.marginTop='11px';
+  const add=(cls,txt,n)=>{ const ch=el('span','chip'+(cls?' '+cls:'')); ch.appendChild(el('b',null,txt));
+    if(n) ch.appendChild(el('span','n',n)); chips.appendChild(ch); };
+  if(st.sj===2&&st.bj===2) add('bomb','四王炸','4张');
+  plan.bombs.forEach(b=> add('bomb', rankStr(b.v)+' '+b.n+'张炸',''));
+  plan.seq.forEach(q=> add('seq', TYPE_CN[q.type]+' '+q.ranks.map(rankStr).join(q.per===1?'':'·'), q.cards+'张'));
+  const rest=plan.rest, T=[],P=[],G=[];
+  for(let v=2;v<=14;v++){ const n=rest[v]||0;
+    if(n>=4) continue;                              // 已作为炸弹单列
+    if(n===3)T.push(v); else if(n===2)P.push(v); else if(n===1)G.push(v); }
+  const f=Math.min(T.length,P.length);
+  for(let i=0;i<f;i++) add('', '三带二 '+rankStr(T[i])+'带'+rankStr(P[i]),'5张');
+  T.slice(f).forEach(v=> add('','三张 '+rankStr(v),'3张'));
+  P.slice(f).forEach(v=> add('','对子 '+rankStr(v),'2张'));
+  if(!(st.sj===2&&st.bj===2)){ if(st.sj) add('','小王'+(st.sj===2?'一对':''), st.sj+'张');
+    if(st.bj) add('','大王'+(st.bj===2?'一对':''), st.bj+'张'); }
+  G.forEach(v=> add('','单张 '+rankStr(v),''));
+  if(plan.unused) add('wild','逢人配 ♥'+rankStr(S.level)+' 待用', plan.unused+'张');
+  c1.appendChild(chips);
+  const usedAs=(plan.used||[]).map(rankStr);
+  const keep = minHandsKeepBombs(st);
+  if(keep && keep.h > base){
+    const lost = [];
+    for(let v=2;v<=14;v++) if((st.c[v]||0)>=4 && (plan.rest[v]||0)<4) lost.push(rankStr(v));
+    const d=el('div','alertline'); d.appendChild(el('span','ic','!'));
+    const sp=el('span');
+    sp.innerHTML='上面这个拆法把 <b>'+lost.join('、')+'</b> 的炸弹拆掉了，换来 '+base+' 手。'
+      +'留住炸弹的话要 <b>'+keep.h+' 手</b>。差 '+(keep.h-base)+' 手值不值，看你还剩多少张、对手有没有炸——'
+      +'炸弹能抢回上手权，通常比省一两手更值钱。';
+    d.appendChild(sp); c1.appendChild(d);
+  }
+  c1.appendChild(el('p','note', (usedAs.length?'逢人配当成 '+usedAs.join('、')+' 用。':'')
+    +'穷举了所有连张拆法之后手数最少的一种，必要时会把炸弹拆进顺子。不看花色，同花顺请自己留意。'));
+  box.appendChild(c1);
+
+  /* 逢人配 */
+  const c2=el('div','card');
+  c2.appendChild(el('h3',null,'手上有几张红桃级牌（逢人配）'));
+  const seg=el('div','seg');
+  [0,1,2].forEach(n=>{ const b=el('button',null,n+' 张'); b.setAttribute('aria-pressed', S.wilds===n);
+    b.onclick=()=>{ S.wilds=n; renderAll(); save(); }; seg.appendChild(b); });
+  c2.appendChild(seg);
+  c2.appendChild(el('p','note','红桃级牌能当除王以外的任何一张牌，上面所有计算都已经把它算进去。'));
+  box.appendChild(c2);
+
+  /* 战术 */
+  const c5=el('div','card');
+  c5.appendChild(el('h3',null,'关键时刻想一下'));
+  const ol=el('ol','tips');
+  [['先数手数，再比大小。','剩 12 张但要 8 手才出完，不如剩 16 张只要 4 手。这也是上面建议的排序依据。'],
+   ['上手权比牌力值钱。','手里始终留一张能重新拿到出牌权的牌（A／级牌／王），否则被卡住就是干看着。'],
+   ['对家报单时，你上手后出最小的单张。','让对家那张牌能压得过去，直接走人。'],
+   ['上家出牌就压，下家是对家就放。','对家在你下家时，小牌让过去比自己赢一轮划算。'],
+   ['逢人配优先配炸，其次接顺子。','早早当普通单张打掉是最大的浪费。'],
+   ['单张早点甩。','留到最后必被卡。趁别人还得跟牌的时候处理掉。'],
+   ['盯住级牌和王。','「大牌未现」归零时，你的 A 就是最大的牌，可以放心走。'],
+   ['进贡出除红桃级牌外最大的一张；还贡还 10 以下任意一张。','末游手握两大王（或双下两家合计两大王）可以抗贡。']
+  ].forEach(([b,s])=>{ const li=el('li'); li.appendChild(el('b',null,b)); li.appendChild(el('span',null,' '+s)); ol.appendChild(li); });
+  c5.appendChild(ol);
+  box.appendChild(c5);
+}
+
+/* ==========================================================
+   计分器
+   ========================================================== */
+const LVNAME = v => byVal[v] || String(v);
+const LVVAL  = s => { const r=RANKS.find(x=>x.k===s); return r?r.v:2; };
+function renderScore(){
+  const A=S.teams.a, B=S.teams.b;
+  $('#nameA').value=A.name; $('#nameB').value=B.name;
+  $('#lvA').textContent=LVNAME(A.lv); $('#lvB').textContent=LVNAME(B.lv);
+  $('#teamA').classList.toggle('act', S.playing==='a');
+  $('#teamB').classList.toggle('act', S.playing==='b');
+  $('#crownA').hidden = S.playing!=='a'; $('#crownB').hidden = S.playing!=='b';
+  ['a','b'].forEach(t=>{ const box=$('#tries'+t.toUpperCase()); box.innerHTML='';
+    if(S.teams[t].lv===14) for(let i=0;i<3;i++){ const d=el('i'); if(i<S.teams[t].tries)d.classList.add('used'); box.appendChild(d); } });
+  const ws=$('#winSeg'); ws.innerHTML='';
+  SEATS.forEach((n,i)=>{
+    const b=el('button',null,i===0?'我':n);
+    b.setAttribute('aria-pressed', (S.pickFirst||0)===i);
+    b.onclick=()=>{ S.pickFirst=i; renderAll(); save(); };
+    ws.appendChild(b);
+  });
+  const wb=$('#winBox'); wb.innerHTML='';
+  if(S.winner){
+    const d=el('div','win');
+    d.appendChild(el('div','t', S.teams[S.winner].name+' 过 A，赢了'));
+    d.appendChild(el('div','','共 '+S.log.length+' 局'));
+    const b=el('button','btn wide','再来一场'); b.style.marginTop='10px'; b.onclick=newMatch;
+    d.appendChild(b); wb.appendChild(d);
+  }
+  const lb=$('#logBox'); lb.innerHTML='';
+  if(!S.log.length) lb.appendChild(el('div','emptyhint','还没有记录。打完一局，在上面点一下就行。'));
+  else S.log.slice().reverse().forEach((r,i)=>{
+    const d=el('div','logline');
+    d.appendChild(el('span','no mono','#'+(S.log.length-i)));
+    d.appendChild(el('span','who '+r.w, S.teams[r.w].name));
+    d.appendChild(el('span','', r.up===3?'双下':r.up===2?'头游+三游':'头游+四游'));
+    d.appendChild(el('span','up mono', r.from+' → '+r.to));
+    lb.appendChild(d);
+  });
+}
+/* ---------- 进贡助手 ----------
+   进贡：末游把「除红桃级牌外最大的一张」给头游
+   双下：三游和四游都进贡，头游先挑大的那张，二游拿剩下的
+   还贡：收贡方还一张 10 或以下的牌
+   抗贡：进贡方手握两张大王可以不进（双下时两家合计两大王也算）
+   先出：进贡方先出牌；抗贡成立则头游先出                              */
+function tributePlan(r){
+  if(!r || r.first==null) return null;
+  const first = r.first, mate = (first+2)%4;
+  if(r.up===3) return {kind:'double', first, mate,
+    from:[0,1,2,3].filter(i=> i!==first && i!==mate)};
+  const last = r.up===1 ? mate : r.last;          // 头游+四游 时末游必是头游的对家
+  if(last==null) return {kind:'ask-last', first, mate,
+    options:[0,1,2,3].filter(i=> i!==first && i!==mate)};
+  return {kind:'single', first, mate, from:[last]};
+}
+function isStale(){
+  if(S.log.length === (S.trackedAt||0)) return false;
+  return ALL.some(r=> S.seen[r.k] > 0);
+}
+function clearTrack(){
+  ALL.forEach(r=>{ S.mine[r.k]=0; S.seen[r.k]=0; });
+  S.trace=[]; S.wilds=0; S.left=[27,27,27,27]; S.turn=0;
+  S.top=null; S.topBy=null; S.passes=0; S.cant=[{},{},{},{}]; S.pend={}; S.pendWild=0;
+  S.mode='hand'; S.trackedAt = S.log.length;
+  renderAll(); save();
+}
+function renderStale(){
+  const bar = $('#staleBar'); bar.innerHTML='';
+  if(!isStale()) return;
+  const d = el('div','stale');
+  const t = el('div','t');
+  t.innerHTML = '记牌器里还是<b>上一局</b>的数据，本局已经改打 <b>'+rankStr(S.level)
+    +'</b> 了。不清空的话，看板上的数字是上一局的，会让你误判。';
+  d.appendChild(t);
+  const btn = el('button','btn gold wide','清空，开始记这一局');
+  btn.onclick = clearTrack;
+  d.appendChild(btn);
+  bar.appendChild(d);
+}
+function renderTribute(){
+  const card = $('#tributeCard'); card.innerHTML='';
+  const r = S.log[S.log.length-1];
+  const plan = tributePlan(r);
+  if(!plan){
+    card.appendChild(el('div','emptyhint',
+      '记完一局之后，这里会算出谁给谁进贡、进什么牌、能不能抗贡，\n以及贡完之后谁先出牌。'));
+    return;
+  }
+  const box = el('div','trib');
+  const nm = i => i===0 ? '你' : SEATS[i];
+  if(isStale()){
+    const w = el('div','stale');
+    const t = el('div','t');
+    t.innerHTML = '记贡牌之前先清一下 —— 记牌器里还是上一局的数据。';
+    w.appendChild(t);
+    const bb = el('button','btn gold wide','清空记牌器，开始新一局');
+    bb.onclick = clearTrack; w.appendChild(bb);
+    box.appendChild(w);
+  }
+  const lvName = rankStr(S.level);
+
+  if(plan.kind==='ask-last'){
+    box.appendChild(el('div','trow')).innerHTML =
+      '<span class="lab">还差一步</span><span>这一局<b>谁是末游</b>？知道了才能算进贡。</span>';
+    const seg = el('div','gift');
+    plan.options.forEach(i=>{
+      const b = el('button',null, SEATS[i]);
+      b.onclick = ()=>{ r.last = i; renderAll(); save(); };
+      seg.appendChild(b);
+    });
+    box.appendChild(seg);
+    card.appendChild(box);
+    return;
+  }
+
+  /* 抗贡开关 */
+  const kangWho = plan.kind==='double' ? '两家合计' : nm(plan.from[0]);
+  if(r.kang){
+    const d = el('div','flow'+(plan.from.indexOf(0)>=0?' me':''));
+    d.appendChild(el('span','who','抗贡成立'));
+    d.appendChild(el('span','what','不进不还，'+nm(plan.first)+'（头游）先出牌'));
+    box.appendChild(d);
+  } else {
+    plan.from.forEach(f=>{
+      const d = el('div','flow'+(f===0||plan.first===0?' me':''));
+      d.appendChild(el('span','who', nm(f)));
+      d.appendChild(el('span','arrow','→'));
+      d.appendChild(el('span','who', plan.kind==='double' ? nm(plan.first)+'、'+nm(plan.mate) : nm(plan.first)));
+      d.appendChild(el('span','what', f===0?'你要进贡':'他要进贡'));
+      box.appendChild(d);
+    });
+    const row=(lab,html)=>{ const d=el('div','trow');
+      d.appendChild(el('span','lab',lab)); const s=el('span'); s.innerHTML=html; d.appendChild(s); box.appendChild(d); };
+    row('进什么','手上<b>除红桃'+lvName+'（逢人配）之外最大的一张</b>。其它花色的 '+lvName+' 照进不误。');
+    if(plan.kind==='double')
+      row('谁先挑','两张贡牌摆出来，<b>'+nm(plan.first)+'（头游）先挑大的</b>，剩下那张给 '+nm(plan.mate)+'。');
+    row('还什么', plan.kind==='double'
+      ? '<b>'+nm(plan.first)+'</b> 和 <b>'+nm(plan.mate)+'</b> 各还一张 <b>10 或以下</b> 的牌给进贡的那家，花色随意。'
+      : '<b>'+nm(plan.first)+'</b> 还一张 <b>10 或以下</b> 的牌给 <b>'+nm(plan.from[0])+'</b>，花色随意。');
+    row('先出牌', plan.kind==='double'
+      ? '<b>两位进贡方先出</b>（你们约定的规则：进贡方先出牌）。'
+      : '<b>'+nm(plan.from[0])+' 先出</b>（进贡方先出牌）。');
+  }
+
+  /* 抗贡按钮 */
+  const kb = el('button','btn wide'+(r.kang?' jade':''),
+    r.kang ? '取消抗贡' : '『'+kangWho+'有两张大王』→ 抗贡');
+  kb.onclick = ()=>{ r.kang = !r.kang; renderAll(); save(); };
+  box.appendChild(kb);
+
+  /* 贡牌记录：顺手把这张大牌记进看板 */
+  if(!r.kang){
+    const t = el('div','trow');
+    t.appendChild(el('span','lab','记一下'));
+    const s = el('span'); s.innerHTML = '贡牌一定是大牌，点一下同时完成记牌 —— 这张牌<b>已经不在别家手里</b>了。';
+    t.appendChild(s); box.appendChild(t);
+    const g = el('div','gift');
+    r.gift = r.gift || [];
+    [['BJ','大王'],['SJ','小王'],[byVal[S.level],'级牌 '+lvName],['A','A'],['K','K']].forEach(([k,label])=>{
+      const b = el('button',null,label);
+      const n = r.gift.filter(x=>x===k).length;
+      if(n) { b.classList.add('on'); b.textContent = label+' ×'+n; }
+      b.onclick = ()=>{
+        if(S.seen[k] >= TOTAL(k)) return;
+        S.seen[k]++; r.gift.push(k); S.trace.push({t:'seen', k});
+        renderAll(); save();
+      };
+      g.appendChild(b);
+    });
+    if(r.gift.length){
+      const undo = el('button',null,'撤销');
+      undo.onclick = ()=>{ const k=r.gift.pop(); if(k){ S.seen[k]--;
+        for(let i=S.trace.length-1;i>=0;i--) if(S.trace[i].t==='seen' && S.trace[i].k===k){ S.trace.splice(i,1); break; } }
+        renderAll(); save(); };
+      g.appendChild(undo);
+    }
+    box.appendChild(g);
+  }
+  card.appendChild(box);
+}
+const snapshot = () => ({a:{...S.teams.a}, b:{...S.teams.b}, playing:S.playing, level:S.level, winner:S.winner});
+function record(up){
+  if(S.winner) return;
+  const seat=S.pickFirst||0, w = seat%2===0 ? 'a' : 'b';
+  const t=S.teams[w], from=LVNAME(t.lv);
+  const atA = t.lv===14 && S.playing===w, prev=snapshot();
+  if(atA){ S.winner=w; S.log.push({w,up,from,to:'胜',prev,first:seat}); renderAll(); save(); return; }
+  const other = w==='a'?'b':'a';
+  if(S.teams[other].lv===14 && S.playing===other){
+    S.teams[other].tries++;
+    if(S.teams[other].tries>=3){ S.teams[other].lv=2; S.teams[other].tries=0; }
+  }
+  let to=t.lv+up; if(t.lv<14 && to>14) to=14;
+  t.lv=Math.min(14,to); S.playing=w; S.level=t.lv;
+  S.log.push({w,up,from,to:LVNAME(t.lv),prev,first:seat,last:null,kang:false,gift:[]});
+  renderAll(); save();
+}
+document.querySelectorAll('[data-up]').forEach(b=> b.onclick=()=>record(+b.dataset.up));
+$('#nameA').oninput = e=>{ S.teams.a.name=e.target.value||'我方'; renderScore(); save(); };
+$('#nameB').oninput = e=>{ S.teams.b.name=e.target.value||'对方'; renderScore(); save(); };
+$('#undoRound').onclick = ()=>{
+  const r=S.log.pop(); if(!r) return;
+  (r.gift||[]).forEach(k=>{ if(S.seen[k]>0) S.seen[k]--; });   // 贡牌记进过看板，一并退回
+  if(S.trackedAt>S.log.length) S.trackedAt=S.log.length;
+  if(r.prev){ S.teams.a={...r.prev.a, name:S.teams.a.name}; S.teams.b={...r.prev.b, name:S.teams.b.name};
+    S.playing=r.prev.playing; S.level=r.prev.level; S.winner=r.prev.winner; }
+  else { S.winner=null; S.teams[r.w].lv=LVVAL(r.from);
+    S.playing=S.log.length?S.log[S.log.length-1].w:'a'; S.level=S.teams[S.playing].lv; }
+  renderAll(); save();
+};
+function newMatch(){
+  S.teams.a.lv=2; S.teams.b.lv=2; S.teams.a.tries=0; S.teams.b.tries=0;
+  S.playing='a'; S.level=2; S.winner=null; S.log=[]; S.trackedAt=0; renderAll(); save();
+}
+$('#newMatch').onclick = ()=>{ if(confirm('清空比分，重开一场？')) newMatch(); };
+
+/* ==========================================================
+   顶部 / tabs / boot
+   ========================================================== */
+function buildLevelPicker(){
+  const p=$('#lvlPick'); p.innerHTML='';
+  RANKS.forEach(r=>{ const b=el('button',null,r.k); b.setAttribute('aria-pressed', S.level===r.v);
+    b.onclick=()=>{ S.level=r.v; DMEMO.clear(); HMEMO.clear(); renderAll(); save(); }; p.appendChild(b); });
+}
+$('#lvlBtn').onclick = ()=>{ const p=$('#lvlPick'); $('#lvlBtn').setAttribute('aria-expanded', p.classList.toggle('open')); };
+function switchTab(t){
+  S.tab=t;
+  document.querySelectorAll('.tabs button').forEach(b=> b.setAttribute('aria-selected', b.dataset.tab===t));
+  document.querySelectorAll('.panel').forEach(p=> p.classList.toggle('on', p.id==='p-'+t));
+  if(t==='help') renderHelp();
+  window.scrollTo({top:0, behavior:'instant'});
+  save();
+}
+document.querySelectorAll('.tabs button').forEach(b=> b.onclick=()=>switchTab(b.dataset.tab));
+function renderAll(){
+  $('#lvlVal').textContent=LVNAME(S.level);
+  buildLevelPicker();
+  $('#tableCard').hidden = S.lite;                 // 座位/牌桌只在全记时有意义
+  $('#bigBoard').hidden  = !S.lite;
+  $('#modeSeg').hidden   = S.lite;                 // 轻记不分登记/记录，就一个动作
+  if(S.lite) $('#modeNote').innerHTML = LITE_ONE;
+  else $('#modeNote').textContent = MODE_NOTE[S.mode];
+  if(S.lite) renderBigBoard(); else { renderSeats(); }
+  renderGrid(); renderPend(); renderReadout(); renderKnows();
+  if(S.tab==='help') renderHelp();
+  renderScore(); renderTribute(); renderStale();
+}
+load();
+document.querySelectorAll('#liteSeg button').forEach(b=> b.setAttribute('aria-pressed', (b.dataset.lite==='1')===!!S.lite));
+$('#liteNote').textContent = LITE_NOTE[S.lite?1:0];
+document.querySelectorAll('#modeSeg button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.mode===(S.mode||'hand')));
+switchTab(S.tab||'track');
+renderAll();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () { /* 离线或不支持，App 照常用 */ });
+  });
+}
+</script>
+
+</body>
+</html>
