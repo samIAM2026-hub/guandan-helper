@@ -7,7 +7,7 @@ import json, math, os, re, struct, zlib
 
 SRC = 'guandan.html'
 OUT = 'docs'   # GitHub Pages 只认仓库根目录或 /docs
-VERSION = 'v23'                     # 改了内容就改这里，装过的手机才会拿到新版本
+VERSION = 'v24'                     # 改了内容就改这里，装过的手机才会拿到新版本
 
 # ---------------------------------------------------------------- PNG 图标
 def write_png(path, w, h, get_px, ss=4):
@@ -118,7 +118,8 @@ manifest = {
 open(os.path.join(OUT, 'manifest.json'), 'w', encoding='utf-8').write(
     json.dumps(manifest, ensure_ascii=False, indent=2))
 
-sw = f'''/* 掼蛋助手 —— 离线缓存。改了内容就把 CACHE 版本号改掉。 */
+sw = f'''/* 掼蛋助手 —— 离线缓存。改了内容就把 CACHE 版本号改掉。
+   页面网络优先（推完打开一次就是新版），静态资源缓存优先。 */
 const CACHE = 'guandan-{VERSION}';
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
@@ -134,18 +135,33 @@ self.addEventListener('activate', e => {{
 
 self.addEventListener('fetch', e => {{
   if (e.request.method !== 'GET') return;
-  e.respondWith(
-    caches.match(e.request).then(hit => {{
-      if (hit) return hit;                       // 缓存优先，牌桌上没网也能开
-      return fetch(e.request).then(res => {{
-        // 把字体这类跨域资源也存下来（opaque 响应，能用）
-        if (res && (res.ok || res.type === 'opaque')) {{
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {{}});
-        }}
+  const url = new URL(e.request.url);
+  const isPage = e.request.mode === 'navigate'
+              || e.request.destination === 'document'
+              || url.pathname.endsWith('/')
+              || url.pathname.endsWith('/index.html');
+
+  if (isPage) {{
+    // 页面走网络优先：有网永远拿最新的，推完打开一次就更新；没网回落到缓存
+    e.respondWith(
+      fetch(e.request).then(res => {{
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {{}});
         return res;
-      }}).catch(() => hit);
-    }})
+      }}).catch(() => caches.match(e.request).then(hit => hit || caches.match('./')))
+    );
+    return;
+  }}
+
+  // 图标、字体这些不会变的，缓存优先
+  e.respondWith(
+    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {{
+      if (res && (res.ok || res.type === 'opaque')) {{
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {{}});
+      }}
+      return res;
+    }}))
   );
 }});
 '''
