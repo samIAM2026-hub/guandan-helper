@@ -97,7 +97,7 @@ p.note{margin:8px 0 0;font-size:12.5px;color:var(--muted);line-height:1.65}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .seg.red button[aria-pressed="true"]{color:var(--red)}
 .seg.s4 button{font-size:12.5px;padding:8px 2px}
-.seg.s4 button[data-a],.seg.s4 button[data-d]{font-size:12px}
+.seg.s4 button[data-a],.seg.s4 button[data-d],.seg.s4 button[data-s]{font-size:12px}
 
 /* 说明收进一个 ⓘ，点开才展开，平时不占地方 */
 .hint{width:18px;height:18px;border-radius:50%;border:1px solid var(--line);color:var(--faint);
@@ -438,6 +438,12 @@ ol.tips span{color:var(--muted)}
         <button data-d="rotate">轮流发牌</button>
       </div>
       <p class="note" id="dealNote"></p>
+      <h3 style="margin-top:14px">升级音效</h3>
+      <div class="seg s4" id="sndSeg">
+        <button data-s="0">关</button>
+        <button data-s="1">开</button>
+      </div>
+      <p class="note" id="sndNote"></p>
     </div>
     <p class="tiny"><button id="toTrack">记牌器 · 只记 20 张大牌 ›</button></p>
   </section>
@@ -467,7 +473,7 @@ const S = {
   level:2, tab:'score',
   seen:{}, trace:[],
   teams:{a:{name:'我方',lv:2,tries:0}, b:{name:'对方',lv:2,tries:0}},
-  playing:'a', winner:null, log:[], pickFirst:0, trackedAt:0, aRule:2, dealRule:'last'
+  playing:'a', winner:null, log:[], pickFirst:0, trackedAt:0, aRule:2, dealRule:'last', sound:false
 };
 ALL.forEach(r=>{ S.seen[r.k]=0; });
 
@@ -575,6 +581,130 @@ function renderKnows(){
 }
 
 /* ==========================================================
+   升级特效：撒花 + 合成音
+   强度跟升级级数挂钩 —— 花多花少本身就是信息，不只是装饰
+   ========================================================== */
+const CONFETTI = ['#B3352A','#1A6551','#D6A94A','#FBFAF6','#E4655A'];
+let cvs=null, ctx=null, parts=[], raf=0;
+
+function ensureCanvas(){
+  if(cvs) return;
+  cvs = document.createElement('canvas');
+  cvs.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:900';
+  document.body.appendChild(cvs);
+  ctx = cvs.getContext('2d');
+}
+function sizeCanvas(){
+  const d = window.devicePixelRatio || 1;
+  cvs.width = innerWidth*d; cvs.height = innerHeight*d;
+  cvs.style.width = innerWidth+'px'; cvs.style.height = innerHeight+'px';
+  ctx.setTransform(d,0,0,d,0,0);
+}
+function tick(){
+  ctx.clearRect(0,0,innerWidth,innerHeight);
+  parts = parts.filter(p=>{
+    p.vy += 0.28; p.x += p.vx; p.y += p.vy; p.vx *= 0.995;
+    p.rot += p.vrot; p.life--;
+    if(p.life<=0 || p.y > innerHeight+40) return false;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, p.life/18);
+    ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+    ctx.fillStyle = p.c;
+    ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+    ctx.restore();
+    return true;
+  });
+  if(parts.length) raf = requestAnimationFrame(tick);
+  else { cancelAnimationFrame(raf); raf=0; ctx.clearRect(0,0,innerWidth,innerHeight); }
+}
+/* n = 升几级(1/2/3)，'win' = 过 A */
+function celebrate(n, fromEl){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  ensureCanvas(); sizeCanvas();
+  const big = n==='win';
+  const count = big ? 170 : n*38;
+  const spread = big ? 1 : 0.72;
+  let ox = innerWidth/2, oy = innerHeight*0.32;
+  if(fromEl){ const r = fromEl.getBoundingClientRect(); ox = r.left+r.width/2; oy = r.top+r.height/2; }
+  for(let i=0;i<count;i++){
+    const a = Math.random()*Math.PI*2, sp = (big?7:5)*(0.35+Math.random());
+    parts.push({
+      x:ox, y:oy,
+      vx: Math.cos(a)*sp*spread*1.5,
+      vy: Math.sin(a)*sp - (big?7:5),
+      w: 5+Math.random()*5, h: 7+Math.random()*7,
+      rot: Math.random()*6.28, vrot: (Math.random()-.5)*0.34,
+      c: CONFETTI[(Math.random()*CONFETTI.length)|0],
+      life: (big?110:80) + Math.random()*30
+    });
+  }
+  if(!raf) raf = requestAnimationFrame(tick);
+}
+
+/* 合成音：五声音阶往上走，升几级就走几个音。零字节，离线可用 */
+const SCALE = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66];
+let AC = null;
+function chime(n){
+  if(!S.sound) return;
+  try{
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if(AC.state === 'suspended') AC.resume();
+    const notes = n==='win' ? SCALE.length : Math.min(SCALE.length, n+1);
+    const t0 = AC.currentTime + 0.02;
+    for(let i=0;i<notes;i++){
+      const at = t0 + i*0.085, dur = 0.34;
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = 'triangle'; o.frequency.value = SCALE[i];
+      g.gain.setValueAtTime(0, at);
+      g.gain.linearRampToValueAtTime(0.22, at+0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, at+dur);
+      o.connect(g).connect(AC.destination);
+      o.start(at); o.stop(at+dur+0.03);
+    }
+    if(n==='win'){                                  // 过 A 收尾补一个和弦
+      const at = t0 + notes*0.085 + 0.06;
+      [523.25, 659.25, 783.99].forEach(f=>{
+        const o=AC.createOscillator(), g=AC.createGain();
+        o.type='triangle'; o.frequency.value=f;
+        g.gain.setValueAtTime(0, at);
+        g.gain.linearRampToValueAtTime(0.16, at+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, at+0.9);
+        o.connect(g).connect(AC.destination);
+        o.start(at); o.stop(at+0.95);
+      });
+    }
+  }catch(e){}                                       // 静音开关/不支持时安静失败，动画照常
+}
+/* 只在横屏放特效 —— 横屏才是"摆桌上给大家看"的场景。
+   但记分按钮只在竖屏有，所以竖屏记完先存着，转到横屏再放。 */
+const LAND = matchMedia('(orientation: landscape) and (max-height: 560px)');
+let pendingCheer = null;
+
+function playCheer(n, team){
+  celebrate(n, document.querySelector('#lv'+(team==='a'?'A':'B')));
+  chime(n);
+}
+function cheer(n, team){
+  if(LAND.matches) playCheer(n, team);
+  else pendingCheer = {n:n, team:team};
+}
+/* 转屏检测：matchMedia 的 change 在个别设备上收不到，
+   所以 resize / orientationchange 也一起监听，谁先到算谁的 */
+function onOrient(){
+  if(!LAND.matches){ parts.length = 0; return; }   // 转回竖屏就收掉
+  if(!pendingCheer) return;
+  const p = pendingCheer; pendingCheer = null;
+  setTimeout(()=> playCheer(p.n, p.team), 280);     // 等布局稳定，牌的位置才准
+}
+if(LAND.addEventListener) LAND.addEventListener('change', onOrient);
+else if(LAND.addListener) LAND.addListener(onOrient);   // 老 Safari
+addEventListener('orientationchange', ()=> setTimeout(onOrient, 60));
+addEventListener('resize', ()=>{
+  if(cvs && parts.length) sizeCanvas();
+  onOrient();
+});
+
+/* ==========================================================
    计分器
    ========================================================== */
 const DEAL_NOTE = {
@@ -612,6 +742,12 @@ function renderScore(){
   });
   document.querySelectorAll('#aRuleSeg button').forEach(b=>
     b.setAttribute('aria-pressed', String(S.aRule||2)===b.dataset.a));
+  document.querySelectorAll('#sndSeg button').forEach(b=>
+    b.setAttribute('aria-pressed', (b.dataset.s==='1')===!!S.sound));
+  $('#sndNote').innerHTML = '撒花和音效<b>只在横屏时放</b>——横屏才是摆桌上给大家看的场景。'
+    + '竖屏记完分先存着，你把手机转过去的时候再放。'
+    + (S.sound ? '　音效是一段上行音阶，升几级走几个音；手机侧边静音打开时可能不响，那是系统限制，动画不受影响。'
+               : '　音效默认关着，牌桌上不吵人。');
   document.querySelectorAll('#dealSeg button').forEach(b=>
     b.setAttribute('aria-pressed', (S.dealRule||'last')===b.dataset.d));
   $('#dealNote').textContent = DEAL_NOTE[S.dealRule||'last']
@@ -876,7 +1012,7 @@ function record(up){
   if(atA){
     if(up >= need){                                // 达标 → 过 A
       S.winner=w; S.log.push({w,up,from,to:'胜',prev,first:seat});
-      renderAll(); save(); return;
+      renderAll(); save(); cheer('win', w); return;
     }
     // 拿了头游但没到门槛：不算过 A，消耗一次打 A 机会，继续打 A
     t.tries++;
@@ -894,13 +1030,16 @@ function record(up){
   let to=t.lv+up; if(t.lv<14 && to>14) to=14;
   t.lv=Math.min(14,to); S.playing=w; S.level=t.lv;
   S.log.push({w,up,from,to:LVNAME(t.lv),prev,first:seat,last:null,kang:false,tribs:[]});
-  renderAll(); save();
+  renderAll(); save(); cheer(up, w);
 }
 document.querySelectorAll('[data-up]').forEach(b=> b.onclick=()=>record(+b.dataset.up));
 document.querySelectorAll('#aRuleSeg button').forEach(b=>
   b.onclick=()=>{ S.aRule=+b.dataset.a; renderAll(); save(); });
 document.querySelectorAll('#dealSeg button').forEach(b=>
   b.onclick=()=>{ S.dealRule=b.dataset.d; renderAll(); save(); });
+document.querySelectorAll('#sndSeg button').forEach(b=>
+  b.onclick=()=>{ S.sound = b.dataset.s==='1'; renderAll(); save();
+    if(S.sound) chime(2); });                      // 开的时候先试听一下
 $('#nameA').oninput = e=>{ S.teams.a.name=e.target.value||'我方'; renderScore(); save(); };
 $('#nameB').oninput = e=>{ S.teams.b.name=e.target.value||'对方'; renderScore(); save(); };
 $('#undoRound').onclick = ()=>{
