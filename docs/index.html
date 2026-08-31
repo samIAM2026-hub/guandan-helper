@@ -352,9 +352,9 @@ ol.tips span{color:var(--muted)}
     </div>
 
     <div class="card" id="knowCard" hidden>
-      <h3>从「过牌」推出来的</h3>
+      <h3 id="knowTitle">这一局已经知道的</h3>
       <div class="knows" id="knows"></div>
-      <p class="note">某家在对手压着的时候选择过，说明他确实压不动。对家压着时的过不算数，已经排除。</p>
+      <p class="note" id="knowNote"></p>
     </div>
   </section>
 
@@ -1054,6 +1054,7 @@ function renderReadout(){
   }
 }
 function renderKnows(){
+  const intel = tributeIntel();
   const rows=[];
   [1,2,3].forEach(i=>{
     const keys = Object.keys(S.cant[i]);
@@ -1068,9 +1069,24 @@ function renderKnows(){
     rows.push({who:SEATS[i], txt});
   });
   const card=$('#knowCard'), box=$('#knows'); box.innerHTML='';
-  card.hidden = S.lite || rows.length===0;
-  rows.forEach(r=>{ const d=el('div','know'); d.appendChild(el('span','who',r.who));
+  const passRows = S.lite ? [] : rows;
+  card.hidden = intel.length===0 && passRows.length===0;
+  if(card.hidden) return;
+  $('#knowTitle').textContent = intel.length && passRows.length ? '这一局已经知道的'
+    : intel.length ? '进贡透露的' : '从「过牌」推出来的';
+  intel.forEach(x=>{
+    const d = el('div','alertline'+(x.ico==='贡'?' calm':''));
+    d.appendChild(el('span','ic', x.ico));
+    const sp = el('span'); sp.innerHTML = x.txt; d.appendChild(sp);
+    d.style.marginTop = box.children.length ? '8px' : '0';
+    box.appendChild(d);
+  });
+  passRows.forEach(r=>{ const d=el('div','know'); d.style.marginTop='8px';
+    d.appendChild(el('span','who',r.who));
     d.appendChild(el('span','txt',r.txt)); box.appendChild(d); });
+  $('#knowNote').textContent = passRows.length
+    ? '进贡的推断来自规则：贡的必须是除红桃级牌外最大的一张。过牌的推断只采信「对手压着时选择过」，对家压着时不跟属于战术，已排除。'
+    : '推断来自规则：贡的必须是除红桃级牌外最大的一张。有人不按规矩进小牌的话，这条就不作数。';
 }
 
 /* ==========================================================
@@ -1249,6 +1265,61 @@ function renderScore(){
    还贡：收贡方还一张 10 或以下的牌
    抗贡：进贡方手握两张大王可以不进（双下时两家合计两大王也算）
    先出：进贡方先出牌；抗贡成立则头游先出                              */
+const LVKEY = () => byVal[S.level];
+const TRIB_CARDS = [['BJ','大王'],['SJ','小王'],['__LV__','级牌'],['A','A'],['K','K'],['Q','Q'],['low','更小']];
+const tribStrength = k => k==='BJ'?17 : k==='SJ'?16 : k==='__LV__'?15
+  : k==='A'?14 : k==='K'?13 : k==='Q'?12 : 11;
+const tribName = k => k==='__LV__' ? '级牌 '+rankStr(S.level)
+  : k==='low' ? 'Q 以下的牌' : (k==='BJ'?'大王':k==='SJ'?'小王':k);
+
+/* 进贡透露了什么 —— 贡牌是「除红桃级牌外最大的一张」，
+   所以它既告诉你收贡方多了什么，也框死了进贡方手里的上限 */
+function tributeIntel(){
+  const out = [];
+  const r = S.log[S.log.length-1];
+  const plan = r && tributePlan(r);
+  if(!plan || plan.kind==='ask-last') return out;
+  const nm = i => i===0 ? '你' : SEATS[i];
+
+  if(r.kang){
+    out.push({ico:'!', txt: plan.kind==='double'
+      ? '<b>'+plan.from.map(nm).join(' 和 ')+'</b> 合计手握<b>两张大王</b>（抗贡）—— 全场就这两张，其他人一张都没有。'
+      : '<b>'+nm(plan.from[0])+'</b> 手握<b>两张大王</b>（抗贡）—— 全场就这两张，其他人一张都没有。'});
+    return out;
+  }
+  const done = (r.tribs||[]).filter(t=>t.card);
+  if(!done.length) return out;
+
+  // 双下时头游先挑大的，据此算出两张贡牌各自去了谁手上
+  let dest = {};
+  if(plan.kind==='double' && done.length===2){
+    const [a,c] = done;
+    const aBig = tribStrength(a.card) >= tribStrength(c.card);
+    dest[a.from] = aBig ? plan.first : plan.mate;
+    dest[c.from] = aBig ? plan.mate : plan.first;
+  } else {
+    done.forEach(t=> dest[t.from] = plan.first);
+  }
+
+  done.forEach(t=>{
+    const to = dest[t.from];
+    out.push({ico:'贡', txt:'<b>'+nm(to)+'</b> 手上多了一张 <b>'+tribName(t.card)+'</b>（'+nm(t.from)+'进的）。'});
+    if(t.card==='low'){
+      out.push({ico:'!', txt:'<b>'+nm(t.from)+'</b> 手上<b>没有 Q 以上的牌</b>了。'});
+    } else if(t.card==='BJ'){
+      // 没有牌比大王更大，说"没有更大的"是废话；这里真正的推断是他大王已经出空
+      out.push({ico:'!', txt:'<b>'+nm(t.from)+'</b> 交出了大王而<b>没有抗贡</b>，说明他原本只有这一张 —— '
+        +'现在他<b>一张大王都没有</b>了。'});
+    } else if(t.card==='SJ'){
+      out.push({ico:'!', txt:'<b>'+nm(t.from)+'</b> 手上<b>没有大王</b>了（有的话得先进大王）。'});
+    } else {
+      out.push({ico:'!', txt:'<b>'+nm(t.from)+'</b> 手上<b>没有比 '+tribName(t.card)+' 更大的牌</b>了'
+        +'（红桃'+rankStr(S.level)+'除外）—— 贡的必须是他最大的一张。'});
+    }
+  });
+  return out;
+}
+
 function tributePlan(r){
   if(!r || r.first==null) return null;
   const first = r.first, mate = (first+2)%4;
@@ -1343,10 +1414,38 @@ function renderTribute(){
     row('还什么', plan.kind==='double'
       ? '<b>'+nm(plan.first)+'</b> 和 <b>'+nm(plan.mate)+'</b> 各还一张 <b>10 或以下</b> 的牌给进贡的那家，花色随意。'
       : '<b>'+nm(plan.first)+'</b> 还一张 <b>10 或以下</b> 的牌给 <b>'+nm(plan.from[0])+'</b>，花色随意。');
+    /* 记下进的是哪张 —— 这是全局信息量最大的一步：
+       贡牌是「除红桃级牌外最大的一张」，所以它同时框死了进贡方手里的上限 */
+    r.tribs = r.tribs || [];
+    plan.from.forEach(f=>{
+      if(!r.tribs.some(x=>x.from===f)) r.tribs.push({from:f, card:null});
+    });
+    plan.from.forEach(f=>{
+      const rec = r.tribs.find(x=>x.from===f);
+      const d = el('div','trow');
+      d.appendChild(el('span','lab', plan.kind==='double' ? nm(f).slice(0,3) : '进的是'));
+      const g = el('div','gift');
+      TRIB_CARDS.forEach(([k,label])=>{
+        const bb = el('button', rec.card===k ? 'on' : null, k==='__LV__' ? '级牌 '+lvName : label);
+        bb.onclick = ()=>{ rec.card = (rec.card===k ? null : k); renderAll(); save(); };
+        g.appendChild(bb);
+      });
+      d.appendChild(g);
+      box.appendChild(d);
+    });
     row('先出牌', plan.kind==='double'
       ? '<b>两位进贡方先出</b>（你们约定的规则：进贡方先出牌）。'
       : '<b>'+nm(plan.from[0])+' 先出</b>（进贡方先出牌）。');
   }
+
+  /* 记完贡牌，当场把推断显示出来 */
+  const intel = tributeIntel();
+  intel.forEach(x=>{
+    const d = el('div','alertline'+(x.ico==='贡'?' calm':''));
+    d.appendChild(el('span','ic', x.ico));
+    const sp = el('span'); sp.innerHTML = x.txt; d.appendChild(sp);
+    box.appendChild(d);
+  });
 
   /* 抗贡按钮 */
   const kb = el('button','btn wide'+(r.kang?' jade':''),
@@ -1354,33 +1453,19 @@ function renderTribute(){
   kb.onclick = ()=>{ r.kang = !r.kang; renderAll(); save(); };
   box.appendChild(kb);
 
-  /* 贡牌记录：顺手把这张大牌记进看板 */
+  /* 记牌提示：贡牌不需要单独记，登记手牌的时机对了就自动算对
+     seen 的含义是「不在别家手里的牌」：
+       贡进来的 → 在我手里 → 登记手牌时已计入
+       贡出去的 → 进了对手手里 → 本来就该算在别家手里
+       对手之间互贡 → 牌仍在别家手里 → 也不该计入
+     所以只要贡完再登记，三种情况全部自动正确。*/
   if(!r.kang){
     const t = el('div','trow');
-    t.appendChild(el('span','lab','记一下'));
-    const s = el('span'); s.innerHTML = '贡牌一定是大牌，点一下同时完成记牌 —— 这张牌<b>已经不在别家手里</b>了。';
-    t.appendChild(s); box.appendChild(t);
-    const g = el('div','gift');
-    r.gift = r.gift || [];
-    [['BJ','大王'],['SJ','小王'],[byVal[S.level],'级牌 '+lvName],['A','A'],['K','K']].forEach(([k,label])=>{
-      const b = el('button',null,label);
-      const n = r.gift.filter(x=>x===k).length;
-      if(n) { b.classList.add('on'); b.textContent = label+' ×'+n; }
-      b.onclick = ()=>{
-        if(S.seen[k] >= TOTAL(k)) return;
-        S.seen[k]++; r.gift.push(k); S.trace.push({t:'seen', k});
-        renderAll(); save();
-      };
-      g.appendChild(b);
-    });
-    if(r.gift.length){
-      const undo = el('button',null,'撤销');
-      undo.onclick = ()=>{ const k=r.gift.pop(); if(k){ S.seen[k]--;
-        for(let i=S.trace.length-1;i>=0;i--) if(S.trace[i].t==='seen' && S.trace[i].k===k){ S.trace.splice(i,1); break; } }
-        renderAll(); save(); };
-      g.appendChild(undo);
-    }
-    box.appendChild(g);
+    t.appendChild(el('span','lab','记牌'));
+    const s2 = el('span');
+    s2.innerHTML = '贡牌<b>不用单独记</b>。等进贡还贡全部结束、你手上的牌定下来之后，'
+      + '再去记牌器登记大牌——那时候贡进来的已经在你手上、贡出去的已经到了对手手上，看板自动就是对的。';
+    t.appendChild(s2); box.appendChild(t);
   }
   card.appendChild(box);
 }
@@ -1401,7 +1486,7 @@ function record(up){
     let to2 = 'A·未过';
     if(t.tries>=3){ t.lv=2; t.tries=0; to2='退回 2'; }
     S.playing=w; S.level=t.lv;
-    S.log.push({w,up,from,to:to2,prev,first:seat,last:null,kang:false,gift:[]});
+    S.log.push({w,up,from,to:to2,prev,first:seat,last:null,kang:false,tribs:[]});
     renderAll(); save(); return;
   }
   const other = w==='a'?'b':'a';
@@ -1411,7 +1496,7 @@ function record(up){
   }
   let to=t.lv+up; if(t.lv<14 && to>14) to=14;
   t.lv=Math.min(14,to); S.playing=w; S.level=t.lv;
-  S.log.push({w,up,from,to:LVNAME(t.lv),prev,first:seat,last:null,kang:false,gift:[]});
+  S.log.push({w,up,from,to:LVNAME(t.lv),prev,first:seat,last:null,kang:false,tribs:[]});
   renderAll(); save();
 }
 document.querySelectorAll('[data-up]').forEach(b=> b.onclick=()=>record(+b.dataset.up));
