@@ -12,6 +12,7 @@
   --red:#A93226; --red-soft:#F0DEDB;
   --jade:#1D6B58; --jade-soft:#D7E5E0;
   --gold:#8E6B18; --gold-soft:#EDE3C9;
+  --face:#FCFCF9; --face-line:#D3D8CE;
   --shadow:0 1px 2px rgba(26,33,29,.07), 0 10px 26px -14px rgba(26,33,29,.30);
   --radius:10px;
 }
@@ -23,6 +24,7 @@
     --red:#E4655A; --red-soft:#38211F;
     --jade:#42B394; --jade-soft:#16302A;
     --gold:#D6A94A; --gold-soft:#332A15;
+    --face:#242C29; --face-line:#3A4441;
     --shadow:0 1px 2px rgba(0,0,0,.45), 0 12px 30px -16px rgba(0,0,0,.8);
   }
 }
@@ -33,6 +35,7 @@
   --red:#E4655A; --red-soft:#38211F;
   --jade:#42B394; --jade-soft:#16302A;
   --gold:#D6A94A; --gold-soft:#332A15;
+  --face:#242C29; --face-line:#3A4441;
   --shadow:0 1px 2px rgba(0,0,0,.45), 0 12px 30px -16px rgba(0,0,0,.8);
 }
 
@@ -63,9 +66,6 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:p
 .lvlpick button{flex:0 0 auto;min-width:34px;padding:5px 0;text-align:center;border:1px solid var(--line);
   border-radius:7px;background:var(--surface);font-family:"IBM Plex Mono",monospace;font-size:14px;color:var(--muted)}
 .lvlpick button[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:var(--surface);font-weight:600}
-.tabs{display:flex;gap:2px;padding:10px 0 8px}
-.tabs button{flex:1;padding:8px 2px 9px;text-align:center;font-size:14px;color:var(--muted);border-bottom:2px solid transparent}
-.tabs button[aria-selected="true"]{color:var(--text);font-weight:500;border-bottom-color:var(--red)}
 
 .panel{display:none;padding-top:16px}
 .panel.on{display:block}
@@ -90,6 +90,10 @@ p.note{margin:8px 0 0;font-size:12.5px;color:var(--muted);line-height:1.65}
   font-family:"IBM Plex Mono",monospace}
 .hint.on{border-color:var(--gold);color:var(--gold);background:var(--gold-soft)}
 .hint.float{position:absolute;top:12px;right:12px;margin:0}
+.tiny{text-align:center;margin:14px 0 4px}
+.tiny button{font-size:12px;color:var(--faint);letter-spacing:.04em;padding:6px 10px;
+  border-bottom:1px dotted var(--line)}
+.tiny button:hover,.tiny button:focus-visible{color:var(--muted)}
 .card{position:relative}
 .card > h3{display:flex;align-items:center}
 
@@ -252,10 +256,19 @@ select{font:inherit;font-size:14px;background:var(--surface);color:var(--text);
 .team.act{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
 .team input{border:none;background:none;text-align:center;width:100%;padding:0;font-size:13px;color:var(--muted);border-bottom:1px dashed transparent}
 .team input:focus{outline:none;border-bottom-color:var(--line)}
-.team .lv{font-family:"IBM Plex Mono",monospace;font-size:40px;font-weight:500;line-height:1.05;margin-top:2px;letter-spacing:-.04em}
-.team.a .lv{color:var(--red)}
-.team.b .lv{color:var(--jade)}
-.team .cap{font-size:10.5px;color:var(--faint);letter-spacing:.1em;margin-top:1px}
+.pcard{width:62px;height:86px;margin:9px auto 2px;position:relative;border-radius:7px;
+  background:var(--face);border:1px solid var(--face-line);
+  box-shadow:0 1px 3px rgba(0,0,0,.18), 0 6px 14px -10px rgba(0,0,0,.5)}
+.pcard .big{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:"IBM Plex Mono",monospace;font-size:33px;font-weight:600;letter-spacing:-.05em}
+.pcard .idx{position:absolute;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;line-height:1}
+.pcard .idx.tl{top:6px;left:7px}
+.pcard .idx.br{bottom:6px;right:7px;transform:rotate(180deg)}
+.pcard .pip{position:absolute;font-size:9px;line-height:1;opacity:.85}
+.pcard .pip.tl{top:17px;left:7px}
+.pcard .pip.br{bottom:17px;right:7px;transform:rotate(180deg)}
+.team.a .pcard{color:var(--red)}
+.team.b .pcard{color:var(--jade)}
 .tries{display:flex;gap:3px;justify-content:center;margin-top:5px;height:6px}
 .tries i{width:6px;height:6px;border-radius:50%;border:1px solid var(--gold)}
 .tries i.used{background:var(--gold)}
@@ -291,13 +304,10 @@ ol.tips span{color:var(--muted)}
       </button>
     </div>
     <div class="lvlpick" id="lvlPick"></div>
-    <nav class="tabs" role="tablist">
-      <button role="tab" data-tab="track" aria-selected="true">记牌器</button>
-      <button role="tab" data-tab="score" aria-selected="false">计分器</button>
-    </nav>
   </header>
 
-  <section class="panel on" id="p-track">
+  <section class="panel" id="p-track">
+    <p class="tiny"><button id="toScore">‹ 回到计分器</button></p>
     <div id="staleBar"></div>
     <div class="card" id="bigBoard">
       <h3>别家手上还有</h3>
@@ -323,23 +333,21 @@ ol.tips span{color:var(--muted)}
     </div>
   </section>
 
-  <section class="panel" id="p-score">
+  <section class="panel on" id="p-score">
     <div id="winBox"></div>
     <div class="card">
       <div class="teams">
         <div class="team a" id="teamA">
           <div class="crown" id="crownA" hidden>本局打这级</div>
           <input id="nameA" maxlength="6" aria-label="我方队名">
-          <div class="lv" id="lvA">2</div>
-          <div class="cap">当前级别</div>
+          <div class="pcard" id="lvA"></div>
           <div class="tries" id="triesA"></div>
         </div>
         <div class="vs">VS</div>
         <div class="team b" id="teamB">
           <div class="crown" id="crownB" hidden>本局打这级</div>
           <input id="nameB" maxlength="6" aria-label="对方队名">
-          <div class="lv" id="lvB">2</div>
-          <div class="cap">当前级别</div>
+          <div class="pcard" id="lvB"></div>
           <div class="tries" id="triesB"></div>
         </div>
       </div>
@@ -382,6 +390,7 @@ ol.tips span{color:var(--muted)}
       </div>
       <p class="note" id="dealNote"></p>
     </div>
+    <p class="tiny"><button id="toTrack">记牌器 · 只记 20 张大牌 ›</button></p>
   </section>
 
   <div class="foot">数据存在这台设备的浏览器里，关掉页面也在。</div>
@@ -406,7 +415,7 @@ const SEATS = ['我','下家','对家','上家'];
 
 const LS = 'guandan-assist-v2';
 const S = {
-  level:2, tab:'track',
+  level:2, tab:'score',
   seen:{}, trace:[],
   teams:{a:{name:'我方',lv:2,tries:0}, b:{name:'对方',lv:2,tries:0}},
   playing:'a', winner:null, log:[], pickFirst:0, trackedAt:0, aRule:2, dealRule:'last'
@@ -428,8 +437,11 @@ function load(){
    记牌器
    ========================================================== */
 /* 值得花点击的点数：级牌、A、大小王 —— 一副牌里总共 20 张 */
-const HOWTO = '数字＝这门牌还有几张<b>在别家手里</b>。开局点掉你自己的大牌，之后每打出一张点一下。'
-  + '<b>同一张只点一次。</b>';
+const HOWTO = '<b>格子上的数字 ＝ 这门牌还有几张在别家手里。</b>'
+  + '<br><br>① <b>开局</b>：把你自己手上的大牌点掉'
+  + '<br>② <b>打牌时</b>：<b>别人</b>打出一张大牌，就点一下'
+  + '<br>③ <b>你自己出牌不用点</b> —— 开局已经算过了，再点会重复'
+  + '<br><br>同一张牌只点一次。点错了用「撤销上一步」。';
 const isKey = k => k==='SJ' || k==='BJ' || k==='A' || (RANKS.find(r=>r.k===k)||{}).v===S.level;
 
 function tapTile(k){                 // 只有一个动作：这张牌不在别家手里了
@@ -496,7 +508,7 @@ function renderReadout(){
   if(clear.length) line('✓','别家手上<b>没有 '+clear.join('、')+'</b> 了。');
   if(S.seen.SJ+S.seen.BJ===4) line('✓','四张王全部现身，<b>天王炸已排除</b>。');
   if(clear.length>=3) line('✓','大牌基本走空，<b>你手上的大牌可以放心领牌了</b>。');
-  if(!box.children.length) line('·','大牌打出来一张就点一张，这里会告诉你什么时候可以放心走牌。');
+  if(!box.children.length) line('·','别人打出大牌就点一张，这里会告诉你什么时候可以放心走牌。');
 }
 function renderKnows(){
   const intel = tributeIntel();
@@ -531,7 +543,11 @@ const LVVAL  = s => { const r=RANKS.find(x=>x.k===s); return r?r.v:2; };
 function renderScore(){
   const A=S.teams.a, B=S.teams.b;
   $('#nameA').value=A.name; $('#nameB').value=B.name;
-  $('#lvA').textContent=LVNAME(A.lv); $('#lvB').textContent=LVNAME(B.lv);
+  const face = (v,suit) => { const n=LVNAME(v);
+    return '<span class="idx tl">'+n+'</span><span class="pip tl">'+suit+'</span>'
+         + '<span class="big">'+n+'</span>'
+         + '<span class="idx br">'+n+'</span><span class="pip br">'+suit+'</span>'; };
+  $('#lvA').innerHTML = face(A.lv,'♥'); $('#lvB').innerHTML = face(B.lv,'♠');
   $('#teamA').classList.toggle('act', S.playing==='a');
   $('#teamB').classList.toggle('act', S.playing==='b');
   $('#crownA').hidden = S.playing!=='a'; $('#crownB').hidden = S.playing!=='b';
@@ -854,7 +870,7 @@ function newMatch(){
 $('#newMatch').onclick = ()=>{ if(confirm('两队等级归 2、清空全部牌局记录，重开一场？\n\n记牌数据不受影响。')) newMatch(); };
 
 /* ==========================================================
-   顶部 / tabs / boot
+   顶部 / 切换 / boot
    ========================================================== */
 function buildLevelPicker(){
   const p=$('#lvlPick'); p.innerHTML='';
@@ -863,13 +879,13 @@ function buildLevelPicker(){
 }
 $('#lvlBtn').onclick = ()=>{ const p=$('#lvlPick'); $('#lvlBtn').setAttribute('aria-expanded', p.classList.toggle('open')); };
 function switchTab(t){
-  S.tab=t;
-  document.querySelectorAll('.tabs button').forEach(b=> b.setAttribute('aria-selected', b.dataset.tab===t));
+  S.tab = t;
   document.querySelectorAll('.panel').forEach(p=> p.classList.toggle('on', p.id==='p-'+t));
   window.scrollTo({top:0, behavior:'instant'});
   save();
 }
-document.querySelectorAll('.tabs button').forEach(b=> b.onclick=()=>switchTab(b.dataset.tab));
+$('#toTrack').onclick = ()=> switchTab('track');
+$('#toScore').onclick = ()=> switchTab('score');
 
 /* 把说明段落折进图标，屏幕上只留一个 ⓘ */
 function hintify(){
@@ -902,6 +918,6 @@ function renderAll(){
 }
 load();
 hintify();
-switchTab(S.tab==='score' ? 'score' : 'track');
+switchTab(S.tab==='track' ? 'track' : 'score');
 renderAll();
 </script>
