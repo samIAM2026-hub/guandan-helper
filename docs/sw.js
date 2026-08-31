@@ -1,6 +1,6 @@
 /* 掼蛋助手 —— 离线缓存。改了内容就把 CACHE 版本号改掉。
    页面网络优先（推完打开一次就是新版），静态资源缓存优先。 */
-const CACHE = 'guandan-v25';
+const CACHE = 'guandan-v28';
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

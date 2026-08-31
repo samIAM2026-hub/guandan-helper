@@ -97,7 +97,7 @@ p.note{margin:8px 0 0;font-size:12.5px;color:var(--muted);line-height:1.65}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .seg.red button[aria-pressed="true"]{color:var(--red)}
 .seg.s4 button{font-size:12.5px;padding:8px 2px}
-.seg.s4 button[data-a],.seg.s4 button[data-d],.seg.s4 button[data-s]{font-size:12px}
+.seg.s4 button[data-a],.seg.s4 button[data-d]{font-size:12px}
 
 /* 说明收进一个 ⓘ，点开才展开，平时不占地方 */
 .hint{width:18px;height:18px;border-radius:50%;border:1px solid var(--line);color:var(--faint);
@@ -187,9 +187,9 @@ p.note{margin:8px 0 0;font-size:12.5px;color:var(--muted);line-height:1.65}
 .table-now .by{margin-left:auto;font-size:11.5px;color:var(--muted)}
 
 /* 记牌网格 */
-.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
-.tile{background:var(--surface);border:1px solid var(--line-soft);border-radius:11px;
-  padding:9px clamp(4px, 1.7vw, 7px) 8px;
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+.tile{background:var(--surface);border:1px solid var(--line-soft);border-radius:12px;
+  padding:13px 14px 12px;
   display:flex;flex-direction:column;align-items:stretch;gap:6px;text-align:left;
   transition:transform .08s, background .15s, border-color .15s;
   user-select:none;position:relative;overflow:hidden}
@@ -198,25 +198,21 @@ p.note{margin:8px 0 0;font-size:12.5px;color:var(--muted);line-height:1.65}
 /* 字号跟着屏宽缩，窄机上「10」「小王」才不会顶出格子 */
 .tile .row{display:flex;align-items:baseline;justify-content:space-between;gap:3px;
   min-width:0;white-space:nowrap;overflow:hidden}
-.tile .rk{font-family:"IBM Plex Mono",monospace;font-size:clamp(18px, 6.2vw, 26px);
-  font-weight:600;line-height:1;letter-spacing:-.05em}
-.tile .lf{font-family:"IBM Plex Mono",monospace;font-size:clamp(12px, 3.7vw, 15px);
-  font-weight:500;line-height:1;color:var(--muted);letter-spacing:-.02em;flex:0 0 auto}
+.tile .rk{font-size:clamp(14px, 4.2vw, 17px);font-weight:500;line-height:1;color:var(--muted)}
+.tile .lf{font-family:"IBM Plex Mono",monospace;font-size:clamp(34px, 11vw, 46px);
+  font-weight:600;line-height:1;letter-spacing:-.04em;flex:0 0 auto}
 .tile .mine{font-size:10px;color:var(--faint);line-height:1;height:11px}
 .tile .mine b{color:var(--jade);font-weight:600}
-.pips{display:flex;gap:2px;height:4px}
-.pip{flex:1 1 0;max-width:7px;height:4px;border-radius:2px;background:var(--line)}
+.pips{display:flex;gap:3px;height:6px}
+.pip{flex:1 1 0;max-width:12px;height:6px;border-radius:3px;background:var(--line)}
 .pip.on{background:var(--text)}
 .tile.lvl{border-color:var(--gold);background:var(--gold-soft)}
 .tile.lvl .rk{color:var(--gold)}
 .tile.lvl .lf{color:color-mix(in srgb, var(--gold) 80%, transparent)}
 .tile.lvl .pip.on{background:var(--gold)}
-.tile.joker .rk{font-family:"Noto Sans SC",sans-serif;font-size:clamp(13px, 4.1vw, 16px);
-  font-weight:700;letter-spacing:0;color:var(--red)}
-/* 「小王」「大王」两个汉字比数字宽，只有窄屏放不下时才改成上下叠 */
-@media (max-width:400px){
-  .tile.joker .row{flex-direction:column;align-items:flex-start;gap:3px}
-}
+.tile.joker .rk{color:var(--red)}
+.tile.lvl .rk{color:var(--gold)}
+.tile .pips{margin-top:2px}
 .tile.joker .pip.on{background:var(--red)}
 .tile.empty{opacity:.32}
 /* 别家一张都没有了，而我手上还有 —— 这几张就是绝对大牌 */
@@ -240,8 +236,7 @@ p.note{margin:8px 0 0;font-size:12.5px;color:var(--muted);line-height:1.65}
 .readout.r4 .v{font-size:23px}
 .readout .v.gold{color:var(--gold)}
 /* 值得花点击的就那几张，其余弱化但仍可点 */
-.grid.lite .tile:not(.key){opacity:.56}
-.grid.lite .tile:not(.key).sel{opacity:1}
+
 .readout div{background:var(--surface);padding:9px 8px;text-align:center}
 .readout .k{font-size:10.5px;color:var(--faint);letter-spacing:.08em;line-height:1.4}
 .readout .v{font-family:"IBM Plex Mono",monospace;font-size:19px;font-weight:500;line-height:1.25}
@@ -358,12 +353,6 @@ ol.tips span{color:var(--muted)}
   <section class="panel" id="p-track">
     <p class="tiny"><button id="toScore">‹ 回到计分器</button></p>
     <div id="staleBar"></div>
-    <div class="card" id="bigBoard">
-      <h3>别家手上还有</h3>
-      <div class="readout r4" id="bigCells"></div>
-      <p class="note" id="bigNote"></p>
-    </div>
-
     <div class="card">
       <p class="note" id="modeNote" style="margin-top:0"></p>
       <div class="grid" id="grid"></div>
@@ -412,6 +401,8 @@ ol.tips span{color:var(--muted)}
         <button class="btn" data-up="2">三游<br><span class="mono" style="font-size:12px;color:var(--muted)">升 2 级</span></button>
         <button class="btn" data-up="1">四游<br><span class="mono" style="font-size:12px;color:var(--muted)">升 1 级</span></button>
       </div>
+      <p class="note">升级的撒花动画<b>只在横屏放</b>——横屏才是摆桌上给大家看的场景。
+        竖屏记完分先存着，你把手机转过去的时候再放。横屏时<b>点一下牌桌可以重放</b>。</p>
     </div>
 
     <h2 class="sec">进贡</h2>
@@ -438,12 +429,7 @@ ol.tips span{color:var(--muted)}
         <button data-d="rotate">轮流发牌</button>
       </div>
       <p class="note" id="dealNote"></p>
-      <h3 style="margin-top:14px">升级音效</h3>
-      <div class="seg s4" id="sndSeg">
-        <button data-s="0">关</button>
-        <button data-s="1">开</button>
-      </div>
-      <p class="note" id="sndNote"></p>
+    </div>
     </div>
     <p class="tiny"><button id="toTrack">记牌器 · 只记 20 张大牌 ›</button></p>
   </section>
@@ -473,7 +459,7 @@ const S = {
   level:2, tab:'score',
   seen:{}, trace:[],
   teams:{a:{name:'我方',lv:2,tries:0}, b:{name:'对方',lv:2,tries:0}},
-  playing:'a', winner:null, log:[], pickFirst:0, trackedAt:0, aRule:2, dealRule:'last', sound:false
+  playing:'a', winner:null, log:[], pickFirst:0, trackedAt:0, aRule:2, dealRule:'last'
 };
 ALL.forEach(r=>{ S.seen[r.k]=0; });
 
@@ -492,12 +478,12 @@ function load(){
    记牌器
    ========================================================== */
 /* 值得花点击的点数：级牌、A、大小王 —— 一副牌里总共 20 张 */
-const HOWTO = '<b>格子上的数字 ＝ 这门牌还有几张在别家手里。</b>'
+const HOWTO = '<b>数字 ＝ 这门牌还有几张在别家手里。</b>'
+  + '<br>一副牌里真正影响决策的只有这 20 张，其余点数不用记。'
   + '<br><br>① <b>开局</b>：把你自己手上的大牌点掉'
   + '<br>② <b>打牌时</b>：<b>别人</b>打出一张大牌，就点一下'
   + '<br>③ <b>你自己出牌不用点</b> —— 开局已经算过了，再点会重复'
   + '<br><br>同一张牌只点一次。点错了用「撤销上一步」。';
-const isKey = k => k==='SJ' || k==='BJ' || k==='A' || (RANKS.find(r=>r.k===k)||{}).v===S.level;
 
 function tapTile(k){                 // 只有一个动作：这张牌不在别家手里了
   if(S.seen[k] >= TOTAL(k)) return;
@@ -508,21 +494,31 @@ function undoStep(){
   const k = S.trace.pop(); if(!k) return;
   S.seen[k]--; renderAll(); save();
 }
+/* 只有这几张值得记：大王、小王、级牌、A。
+   其余点数在牌桌上几乎不影响决策，出现在屏幕上只是干扰。 */
+function keyCards(){
+  const lv = byVal[S.level];
+  const list = [['BJ','大王'], ['SJ','小王']];
+  if(lv === 'A') list.push(['A','A（本局级牌）']);   // 打 A 时两者是同一张
+  else { list.push([lv,'级牌 '+lv]); list.push(['A','A']); }
+  return list;
+}
 function renderGrid(){
   const g = $('#grid'); g.innerHTML='';
-  g.className = 'grid lite';
-  ALL.forEach(r=>{
-    const t=TOTAL(r.k), left=t-S.seen[r.k];
-    const b = el('button','tile'+(r.v===S.level?' lvl':'')+((r.k==='SJ'||r.k==='BJ')?' joker':'')
-      +(left===0?' owned':'')+(isKey(r.k)?' key':''));
-    const row=el('div','row');
-    row.appendChild(el('span','rk',LABEL(r.k)));
-    row.appendChild(el('span','lf',String(left)));
+  keyCards().forEach(([k,label])=>{
+    const t = TOTAL(k), left = t - S.seen[k];
+    const b = el('button','tile'
+      + (byVal[S.level]===k ? ' lvl' : '')
+      + ((k==='SJ'||k==='BJ') ? ' joker' : '')
+      + (left===0 ? ' owned' : ''));
+    const row = el('div','row');
+    row.appendChild(el('span','rk', label));
+    row.appendChild(el('span','lf', String(left)));
     b.appendChild(row);
-    const pips=el('div','pips');
+    const pips = el('div','pips');
     for(let i=0;i<t;i++) pips.appendChild(el('i','pip'+(i<left?' on':'')));
     b.appendChild(pips);
-    b.onclick = ()=> tapTile(r.k);
+    b.onclick = ()=> tapTile(k);
     g.appendChild(b);
   });
 }
@@ -537,23 +533,6 @@ function resetRound(){
   clearTrack();
 }
 /* 大牌看板：只有这 20 张牌值得你抬手 */
-function renderBigBoard(){
-  const cells = $('#bigCells'); cells.innerHTML='';
-  const keys = [['BJ','大王'],['SJ','小王'],[byVal[S.level],'级牌 '+rankStr(S.level)],['A','A']];
-  keys.forEach(([k,label])=>{
-    const left = Math.max(0, TOTAL(k)-S.seen[k]);
-    const d = el('div');
-    d.appendChild(el('div','k',label));
-    const v = el('div','v'+(left===0?' jade':''));   // 归零＝好消息，别家没有了
-    v.textContent = left;
-    d.appendChild(v);
-    cells.appendChild(d);
-  });
-  const gone = 20 - keys.reduce((a,[k])=>a+Math.max(0,TOTAL(k)-S.seen[k]),0);
-  $('#bigNote').innerHTML = gone===0
-    ? '真正影响决策的只有这 20 张：级牌 8、A 8、大小王 4。'
-    : '已有 '+gone+'/20 张不在别家手里。<b>归零＝这门牌你随便走</b>。';
-}
 function renderReadout(){
   const box=$('#alerts'); box.innerHTML='';
   const line=(ic,html)=>{ const d=el('div','alertline calm'); d.appendChild(el('span','ic',ic));
@@ -655,40 +634,6 @@ function celebrate(n, fromEl){
   if(!raf) raf = requestAnimationFrame(tick);
 }
 
-/* 合成音：五声音阶往上走，升几级就走几个音。零字节，离线可用 */
-const SCALE = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50, 1174.66];
-let AC = null;
-function chime(n){
-  if(!S.sound) return;
-  try{
-    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
-    if(AC.state === 'suspended') AC.resume();
-    const notes = n==='win' ? SCALE.length : Math.min(SCALE.length, n+1);
-    const t0 = AC.currentTime + 0.02;
-    for(let i=0;i<notes;i++){
-      const at = t0 + i*0.085, dur = 0.34;
-      const o = AC.createOscillator(), g = AC.createGain();
-      o.type = 'triangle'; o.frequency.value = SCALE[i];
-      g.gain.setValueAtTime(0, at);
-      g.gain.linearRampToValueAtTime(0.22, at+0.012);
-      g.gain.exponentialRampToValueAtTime(0.0001, at+dur);
-      o.connect(g).connect(AC.destination);
-      o.start(at); o.stop(at+dur+0.03);
-    }
-    if(n==='win'){                                  // 过 A 收尾补一个和弦
-      const at = t0 + notes*0.085 + 0.06;
-      [523.25, 659.25, 783.99].forEach(f=>{
-        const o=AC.createOscillator(), g=AC.createGain();
-        o.type='triangle'; o.frequency.value=f;
-        g.gain.setValueAtTime(0, at);
-        g.gain.linearRampToValueAtTime(0.16, at+0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, at+0.9);
-        o.connect(g).connect(AC.destination);
-        o.start(at); o.stop(at+0.95);
-      });
-    }
-  }catch(e){}                                       // 静音开关/不支持时安静失败，动画照常
-}
 /* 只在横屏放特效 —— 横屏才是"摆桌上给大家看"的场景。
    但记分按钮只在竖屏有，所以竖屏记完先存着，转到横屏再放。 */
 const LAND = matchMedia('(orientation: landscape) and (max-height: 560px)');
@@ -698,7 +643,6 @@ function playCheer(n, team){
   lastCheer = {n:n, team:team};                    // 记住，供点击重放
   parts.length = 0; rain = 0;                      // 重放前先清场，不叠加
   celebrate(n, document.querySelector('#lv'+(team==='a'?'A':'B')));
-  chime(n);
 }
 function cheer(n, team){
   if(LAND.matches) playCheer(n, team);
@@ -765,12 +709,6 @@ function renderScore(){
   });
   document.querySelectorAll('#aRuleSeg button').forEach(b=>
     b.setAttribute('aria-pressed', String(S.aRule||2)===b.dataset.a));
-  document.querySelectorAll('#sndSeg button').forEach(b=>
-    b.setAttribute('aria-pressed', (b.dataset.s==='1')===!!S.sound));
-  $('#sndNote').innerHTML = '撒花和音效<b>只在横屏时放</b>——横屏才是摆桌上给大家看的场景。'
-    + '竖屏记完分先存着，你把手机转过去的时候再放。'
-    + (S.sound ? '　音效是一段上行音阶，升几级走几个音；手机侧边静音打开时可能不响，那是系统限制，动画不受影响。'
-               : '　音效默认关着，牌桌上不吵人。');
   document.querySelectorAll('#dealSeg button').forEach(b=>
     b.setAttribute('aria-pressed', (S.dealRule||'last')===b.dataset.d));
   $('#dealNote').textContent = DEAL_NOTE[S.dealRule||'last']
@@ -1060,9 +998,6 @@ document.querySelectorAll('#aRuleSeg button').forEach(b=>
   b.onclick=()=>{ S.aRule=+b.dataset.a; renderAll(); save(); });
 document.querySelectorAll('#dealSeg button').forEach(b=>
   b.onclick=()=>{ S.dealRule=b.dataset.d; renderAll(); save(); });
-document.querySelectorAll('#sndSeg button').forEach(b=>
-  b.onclick=()=>{ S.sound = b.dataset.s==='1'; renderAll(); save();
-    if(S.sound) chime(2); });                      // 开的时候先试听一下
 $('#nameA').oninput = e=>{ S.teams.a.name=e.target.value||'我方'; renderScore(); save(); };
 $('#nameB').oninput = e=>{ S.teams.b.name=e.target.value||'对方'; renderScore(); save(); };
 $('#undoRound').onclick = ()=>{
@@ -1125,7 +1060,7 @@ function hintify(){
 function renderAll(){
   $('#lvlVal').textContent = LVNAME(S.level);
   $('#modeNote').innerHTML = HOWTO;
-  buildLevelPicker(); renderBigBoard(); renderGrid(); renderButtons();
+  buildLevelPicker(); renderGrid(); renderButtons();
   renderReadout(); renderKnows();
   renderScore(); renderTribute(); renderStale();
 }

@@ -7,7 +7,7 @@ import json, math, os, re, struct, zlib
 
 SRC = 'guandan.html'
 OUT = 'docs'   # GitHub Pages 只认仓库根目录或 /docs
-VERSION = 'v25'                     # 改了内容就改这里，装过的手机才会拿到新版本
+VERSION = 'v28'                     # 改了内容就改这里，装过的手机才会拿到新版本
 
 # ---------------------------------------------------------------- 图标
 # 图标是设计稿（白牌 + 朱砂「掼」），存在 icons/，这里只负责复制过去。
