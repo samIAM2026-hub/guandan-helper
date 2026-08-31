@@ -1,5 +1,5 @@
 /* 掼蛋助手 —— 离线缓存。改了内容就把 CACHE 版本号改掉。 */
-const CACHE = 'guandan-v13';
+const CACHE = 'guandan-v16';
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
