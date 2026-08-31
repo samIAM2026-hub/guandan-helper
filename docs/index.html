@@ -127,12 +127,8 @@ p.note{margin:8px 0 0;font-size:12.5px;color:var(--muted);line-height:1.65}
   :root[data-view="score"] .team input{font-size:15px}
   :root[data-view="score"] .pcard{height:74dvh;width:auto;margin:8px auto 0}
   :root[data-view="score"] .pcard .big{font-size:min(23dvh,150px)}
-  :root[data-view="score"] .pcard .idx{font-size:min(6dvh,38px)}
-  :root[data-view="score"] .pcard .pip{font-size:min(5dvh,32px)}
-  :root[data-view="score"] .pcard .idx.tl{top:3.5%;left:5%}
-  :root[data-view="score"] .pcard .idx.br{bottom:3.5%;right:5%}
-  :root[data-view="score"] .pcard .pip.tl{top:13%;left:5.5%}
-  :root[data-view="score"] .pcard .pip.br{bottom:13%;right:5.5%}
+  :root[data-view="score"] .pcard .corner .rk{font-size:min(6dvh,38px)}
+  :root[data-view="score"] .pcard .corner .su{font-size:min(5dvh,32px)}
   /* 徽章会压住队名；隔着桌子看，给牌镶一圈金边比小徽章清楚得多 */
   :root[data-view="score"] .crown{display:none}
   :root[data-view="score"] .team.act .pcard{
@@ -309,13 +305,16 @@ select{font:inherit;font-size:14px;background:var(--surface);color:var(--text);
 .pcard .big{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   font-family:"IBM Plex Mono",monospace;font-size:clamp(42px, 13.5vw, 56px);
   font-weight:600;letter-spacing:-.05em}
-.pcard .idx{position:absolute;font-family:"IBM Plex Mono",monospace;
-  font-size:clamp(13px, 4vw, 17px);font-weight:600;line-height:1}
-.pcard .idx.tl{top:7px;left:9px}
-.pcard .idx.br{bottom:7px;right:9px;transform:rotate(180deg)}
-.pcard .pip{position:absolute;font-size:clamp(11px, 3.4vw, 14px);line-height:1;opacity:.9}
-.pcard .pip.tl{top:calc(7px + clamp(15px, 4.6vw, 20px));left:9px}
-.pcard .pip.br{bottom:calc(7px + clamp(15px, 4.6vw, 20px));right:9px;transform:rotate(180deg)}
+/* 角标＝点数在上、花色在下，用 flex 纵向排。
+   之前是用 calc 手算花色的偏移，手机上只剩 2px 间隙，iOS 字体度量一变就压上了 */
+.pcard .corner{position:absolute;display:flex;flex-direction:column;align-items:center;
+  gap:.12em;line-height:1;
+  font-family:"IBM Plex Mono",ui-monospace,"Segoe UI Symbol",serif;
+  font-variant-emoji:text}                       /* 别把花色画成 emoji */
+.pcard .corner.tl{top:6.5%;left:7%}
+.pcard .corner.br{bottom:6.5%;right:7%;transform:rotate(180deg)}
+.pcard .corner .rk{font-size:clamp(13px, 4vw, 17px);font-weight:600}
+.pcard .corner .su{font-size:clamp(11px, 3.4vw, 14px);opacity:.92}
 .team.a .pcard{color:var(--card-red)}
 .team.b .pcard{color:var(--card-jade)}
 .tries{display:flex;gap:3px;justify-content:center;margin-top:5px;height:6px}
@@ -593,11 +592,12 @@ const LVVAL  = s => { const r=RANKS.find(x=>x.k===s); return r?r.v:2; };
 function renderScore(){
   const A=S.teams.a, B=S.teams.b;
   $('#nameA').value=A.name; $('#nameB').value=B.name;
+  const corner = (n,suit,pos) =>
+    '<span class="corner '+pos+'"><span class="rk">'+n+'</span><span class="su">'+suit+'</span></span>';
   const face = (v,suit) => { const n=LVNAME(v);
-    return '<span class="idx tl">'+n+'</span><span class="pip tl">'+suit+'</span>'
-         + '<span class="big">'+n+'</span>'
-         + '<span class="idx br">'+n+'</span><span class="pip br">'+suit+'</span>'; };
-  $('#lvA').innerHTML = face(A.lv,'♥'); $('#lvB').innerHTML = face(B.lv,'♠');
+    return corner(n,suit,'tl') + '<span class="big">'+n+'</span>' + corner(n,suit,'br'); };
+  $('#lvA').innerHTML = face(A.lv,'\u2665\uFE0E');   // FE0E = 强制文字字形，否则 iOS 会渲染成彩色 emoji
+  $('#lvB').innerHTML = face(B.lv,'\u2660\uFE0E');
   $('#teamA').classList.toggle('act', S.playing==='a');
   $('#teamB').classList.toggle('act', S.playing==='b');
   $('#crownA').hidden = S.playing!=='a'; $('#crownB').hidden = S.playing!=='b';

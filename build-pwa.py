@@ -7,7 +7,7 @@ import json, math, os, re, struct, zlib
 
 SRC = 'guandan.html'
 OUT = 'docs'   # GitHub Pages 只认仓库根目录或 /docs
-VERSION = 'v21'                     # 改了内容就改这里，装过的手机才会拿到新版本
+VERSION = 'v22'                     # 改了内容就改这里，装过的手机才会拿到新版本
 
 # ---------------------------------------------------------------- PNG 图标
 def write_png(path, w, h, get_px, ss=4):
@@ -106,7 +106,6 @@ manifest = {
     "start_url": ".",
     "scope": ".",
     "display": "standalone",
-    "orientation": "portrait",
     "background_color": "#141A18",
     "theme_color": "#141A18",
     "lang": "zh-CN",
