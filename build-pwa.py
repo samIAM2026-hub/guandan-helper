@@ -7,59 +7,13 @@ import json, math, os, re, struct, zlib
 
 SRC = 'guandan.html'
 OUT = 'docs'   # GitHub Pages 只认仓库根目录或 /docs
-VERSION = 'v24'                     # 改了内容就改这里，装过的手机才会拿到新版本
+VERSION = 'v25'                     # 改了内容就改这里，装过的手机才会拿到新版本
 
-# ---------------------------------------------------------------- PNG 图标
-def write_png(path, w, h, get_px, ss=4):
-    """get_px(x, y) -> (r,g,b,a)，用 ss 倍超采样做抗锯齿"""
-    rows = []
-    for y in range(h):
-        row = []
-        for x in range(w):
-            acc = [0, 0, 0, 0]
-            for sy in range(ss):
-                for sx in range(ss):
-                    px = get_px(x + (sx + .5) / ss, y + (sy + .5) / ss)
-                    for i in range(4):
-                        acc[i] += px[i]
-            row.append(tuple(int(c / (ss * ss)) for c in acc))
-        rows.append(row)
-    raw = b''.join(b'\x00' + bytes(v for px in r for v in px) for r in rows)
-
-    def chunk(tag, data):
-        return (struct.pack('>I', len(data)) + tag + data
-                + struct.pack('>I', zlib.crc32(tag + data) & 0xffffffff))
-
-    hdr = struct.pack('>IIBBBBB', w, h, 8, 6, 0, 0, 0)
-    with open(path, 'wb') as f:
-        f.write(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', hdr)
-                + chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b''))
-
-
-BG   = (0x14, 0x1A, 0x18, 255)     # 深墨绿，和 App 暗色主题同源
-GOLD = (0xD6, 0xA9, 0x4A, 255)     # 级牌金
-RED  = (0xE4, 0x65, 0x5A, 255)     # 朱砂
-
-def rounded_rect(x, y, x0, y0, x1, y1, r):
-    if x < x0 or x > x1 or y < y0 or y > y1:
-        return False
-    cx = min(max(x, x0 + r), x1 - r)
-    cy = min(max(y, y0 + r), y1 - r)
-    return (x - cx) ** 2 + (y - cy) ** 2 <= r * r
-
-def make_icon(size, pad):
-    """一张金色的牌，中间一点朱砂 —— 就是 App 里级牌格子的样子"""
-    def px(x, y):
-        s = size
-        cx0, cy0 = s * pad, s * (pad - .03)
-        cx1, cy1 = s * (1 - pad), s * (1 - pad + .03)
-        if rounded_rect(x, y, cx0, cy0, cx1, cy1, s * .075):
-            dx, dy = x - s / 2, y - s * .5
-            if dx * dx + dy * dy <= (s * .115) ** 2:
-                return RED
-            return GOLD
-        return BG
-    return px
+# ---------------------------------------------------------------- 图标
+# 图标是设计稿（白牌 + 朱砂「掼」），存在 icons/，这里只负责复制过去。
+# 要改图标就改 icons/ 里的文件，别在这里画。
+import shutil
+ICONS = ['icon-192.png', 'icon-512.png', 'icon-180.png', 'icon-512-maskable.png']
 
 # ---------------------------------------------------------------- 组装
 os.makedirs(OUT, exist_ok=True)
@@ -167,9 +121,12 @@ self.addEventListener('fetch', e => {{
 '''
 open(os.path.join(OUT, 'sw.js'), 'w', encoding='utf-8').write(sw)
 
-for name, size, pad in [('icon-192.png', 192, .17), ('icon-512.png', 512, .17),
-                        ('icon-180.png', 180, .17), ('icon-512-maskable.png', 512, .27)]:
-    write_png(os.path.join(OUT, name), size, size, make_icon(size, pad))
+for name in ICONS:
+    src_icon = os.path.join('icons', name)
+    if os.path.exists(src_icon):
+        shutil.copy2(src_icon, os.path.join(OUT, name))
+    else:
+        print('  ⚠ 缺图标:', src_icon)
 
 readme = '''# 掼蛋牌桌助手 · PWA
 
